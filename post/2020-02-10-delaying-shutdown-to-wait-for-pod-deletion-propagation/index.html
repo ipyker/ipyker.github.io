@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="延迟关闭以等待 Pod 删除传播 （三）" />
+    <meta property="og:title" content="延迟关闭以等待 Pod 删除传播 （三）" />
+    <meta property="twitter:title" content="延迟关闭以等待 Pod 删除传播 （三）" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>延迟关闭以等待 Pod 删除传播 （三）-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('/img/post-bg-coffee.jpeg')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                    </div>
+                    <h1>延迟关闭以等待 Pod 删除传播 （三）</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;&#34;
+                         
+                        on 
+                        Monday, January 1, 0001
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#pod-关闭序列">Pod 关闭序列</a></li>
+    <li><a href="#缓解问题">缓解问题</a></li>
+    <li><a href="#重建-pod">重建 Pod</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#备注">备注</a></li>
+  </ul>
+</nav>
+                
+                <p>
+  <img src="/assets/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-1.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-1">
+
+</p>
+<blockquote>
+<p>延迟关闭 Kubernetes 中的 Pod</p>
+</blockquote>
+<p>这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而减轻了因不正常关机而导致的停机时间。但是我们还了解到，启动关闭序列后，Pod 可能会继续接收流量。这意味着最终客户端可能会收到错误消息，因为它们被路由到了不再能够为流量提供服务的 Pod。理想情况下，我们希望 Pod 在被逐出后立即停止接收流量。为了减轻这种情况，我们必须首先了解为什么会这样。</p>
+<p><em>这篇文章中的许多信息都是从 MarkoLukša 的“<a href="https://www.manning.com/books/kubernetes-in-action">Kubernetes in Action</a>”一书中学到的。您可以在<a href="https://freecontent.manning.com/handling-client-requests-properly-with-kubernetes/">此处</a>找到相关部分的节选。除了此处介绍的材料外，本书还提供了在 Kubernetes 上运行应用程序的最佳时间的出色描述，我们强烈建议您阅读。</em></p>
+<h1 id="pod-关闭序列">Pod 关闭序列</h1>
+<p>在<a href="https://www.ipyker.com/post/2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">上一篇文章中</a>，我们介绍了 Pod 驱逐生命周期。如果你从该文章中回想起，逐出序列的第一步是要删除 Pod，这会引发一系列事件，最终导致 Pod 从系统中删除。但是，我们并没有谈论的是，如何从 <code>Service</code> 中注销 Pod，以使其停止接收流量。</p>
+<p>那么，是什么原因导致 Pod 从 <code>Service</code> 中被删除呢？为了理解这一点，我们需要更深入地了解从集群中删除 Pod 时会发生什么？</p>
+<p>通过 API 将 Pod 从集群中删除后，所有发生的事情就是该 Pod 在元数据服务器中被标记为要删除。这会向所有相关子系统发送一个 Pod 删除通知，然后处理该通知：</p>
+<ul>
+<li>运行 Pod 的 <code>kubelet</code> 将启动上一篇文章中描述的关闭顺序。</li>
+<li>所有节点上运行的 <code>kube-proxy</code> 守护程序将从 <code>iptables</code> 中删除 pod 的 ip 地址。</li>
+<li>endpoint 控制器将从有效 endpoint 列表中删除该 Pod，然后从 <code>Service</code> 中删除该 Pod。</li>
+</ul>
+<p>您无需了解每个系统的详细信息。这里的重点涉及多个系统，这些系统可能在不同的节点上运行，并且这些序列并行发生。因此，将 Pod 从所有活动列表中删除之前，Pod 很有可能运行 <code>preStop</code> 钩子并接收到 <code>TERM</code> 信号。这就是为什么即使在启动关闭序列后，Pod 仍继续接收流量的原因。</p>
+<h1 id="缓解问题">缓解问题</h1>
+<p>从表面上看，我们似乎想要做的是将事件序列链接起来，以便直到从所有相关子系统注销了 Pod 之后，Pod 才会关闭。但是，由于 Kubernetes 系统的分布式性质，在实践中很难做到这一点。如果其中一个节点遇到网络分区会怎样？您是否无限期地等待传播？如果该节点重新联机怎么办？如果必须等待 1000 个节点怎么办？成千上万怎么办？</p>
+<p>不幸的是，这里没有放置所有中断的完美解决方案。但是，我们可以做的是在关闭序列中引入足够的延迟以捕获 99% 的情况。为此，我们在 preStop 钩子中引入了一个 <code>sleep</code>，以延迟关闭序列。在我们的示例中，让我们看看它是如何工作的。</p>
+<p>我们将需要更新配置以将延迟引入为 <code>preStop</code> 钩子的一部分。在“Kubernetes in Action”中，Lukša 建议使用 5-10 秒，因此在这里我们将使用 5 秒：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">lifecycle</span>:
+  <span style="color:#ff79c6">preStop</span>:
+    <span style="color:#ff79c6">exec</span>:
+      <span style="color:#ff79c6">command</span>: [
+        <span style="color:#f1fa8c">&#34;sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>,
+        <span style="color:#6272a4"># Introduce a delay to the shutdown sequence to wait for the</span>
+        <span style="color:#6272a4"># pod eviction event to propagate. Then, gracefully shutdown</span>
+        <span style="color:#6272a4"># nginx.</span>
+        <span style="color:#f1fa8c">&#34;sleep 5 &amp;&amp; /usr/sbin/nginx -s quit&#34;</span>,
+      ]
+</code></pre></div><p>现在让我们来看一下示例中关闭序列期间发生的情况。像上一篇文章一样，我们将从 <code>kubectl drain</code> 开始，它将逐出节点上的 Pod。这将发送一个删除 Pod 事件，该事件同时通知 <code>kubelet</code> 和 endpoint 控制器（管理 <code>Service</code> endpoint）。在此，我们假设 preStop 钩子在控制器删除 Pod 之前启动。</p>
+<p>
+  <img src="/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-2.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-2">
+
+</p>
+<blockquote>
+<p>Drain 节点将删除 Pod，Pod 又发送一个删除事件。</p>
+</blockquote>
+<p>此时，<code>preStop</code> 钩子启动，这将使关闭序列延迟 5 秒。在这段时间中，endpoint 控制器将移除 Pod：</p>
+<p>
+  <img src="/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-3.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-3">
+
+</p>
+<blockquote>
+<p>在延迟关闭序列的同时，将 Pod 从控制器上移除。</p>
+</blockquote>
+<p>请注意，在此延迟期间，Pod 仍处于启动状态，因此即使其接收到连接，Pod 仍能够处理连接。此外，如果在将 Pod 从控制器移除后，任何客户端尝试连接，它们将不会路由到正在关闭的 Pod。因此在这种情况下，假设控制器在延迟时间内处理事件，则不会出现停机时间。</p>
+<p>最后，为了完成关闭序列，<code>preStop</code> 钩子从休眠中退出并关闭 Nginx Pod，从该节点中移除 Pod：</p>
+<p>
+  <img src="/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-4.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-4">
+
+
+
+  <img src="/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-5.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-5">
+
+</p>
+<p>此时，可以安全地在节点 1 上进行任何升级，包括重新引导节点以加载新的内核版本。如果我们启动了一个新节点来容纳已经在其上运行的工作负载，那么我们也可以关闭该节点（请参阅<a href="https://www.ipyker.com/post/2020-2-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">下一节 PodDisruptionBugdgets</a>）。</p>
+<h1 id="重建-pod">重建 Pod</h1>
+<p>如果到目前为止，您可能想知道我们如何重新创建最初在节点上调度的 Pod。现在我们知道了如何优雅关闭 Pod，但是如果要恢复运行的 Pod 的原始数量至关重要，该怎么办？这是 <code>Deployment</code> 资源发挥作用的地方。</p>
+<p><code>Deployment</code> 被称为<a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">控制器</a>，它负责在集群上维护指定的所需状态。如果您还记得我们的资源配置，我们并没有直接在配置中创建 Pod。取而代之的是，我们通过使用 <code>Deployment</code> 资源为模板提供如何创建 Pod 的模板，从而自动为我们管理 Pod。这是我们配置中的 <code>template</code> 部分：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">template</span>:
+    <span style="color:#ff79c6">metadata</span>:
+      <span style="color:#ff79c6">labels</span>:
+        <span style="color:#ff79c6">app</span>: nginx
+    <span style="color:#ff79c6">spec</span>:
+      <span style="color:#ff79c6">containers</span>:
+      - <span style="color:#ff79c6">name</span>: nginx
+        <span style="color:#ff79c6">image</span>: nginx:1.15
+        <span style="color:#ff79c6">ports</span>:
+        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">80</span>
+</code></pre></div><p>这指定了应使用标签 <code>app:nginx</code> 和一个运行 <code>nginx:1.15</code> 镜像的容器在 <code>Deployment</code> 中创建 Pod，并暴露 <code>80</code> 端口。除了 Pod 模板之外，我们还为 <code>Deployment</code> 资源提供了一个 spec，用于指定应维护的副本数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">2</span>
+</code></pre></div><p>这会通知控制器它应尝试维护集群上运行的两个 Pod。只要运行的 Pod 数量下降，控制器将自动创建一个新的 Pod 来替代它。因此，在本例中，当我们在 drain 操作期间从节点中驱逐 Pod 时，<code>Deployment</code> 控制器会在其他可用节点之一上自动重新创建 Pod。</p>
+<h1 id="总结">总结</h1>
+<p>总而言之，由于 <code>preStop</code> 钩子中有足够的延迟和优雅终止，我们现在可以在单个节点上正常关闭 Pod。利用 <code>Deployment</code> 资源，我们可以自动重新创建关闭的 Pod。但是，如果我们想一次替换集群中的所有节点怎么办？</p>
+<p>如果直接 drain 所有节点，则可能会导致停机，因为 Service 负载均衡器可能最终没有可用的 Pod。更糟糕的是，对于有状态的系统，我们可能会耗尽选举数量，从而随着新 Pod 的出现而导致停机时间延长，并且必须经过 leader 选举，以等待一定数量的节点重新出现。</p>
+<p>如果改为一次 drain 一个节点，那么最终可能会在其余的旧节点上启动新的 Pod。这种情况也存在风险，我们可能遇到所有的 Pod 被调度到同一个旧的节点，并且当我们 drain 该节点时，我们还是会失去所有的 Pod 副本。</p>
+<p>为了处理这种情况，Kubernetes 提供了一个称为 <code>PodDisruptionBudgets</code> 的功能，该功能指定了在任何给定的时间点可以关闭的 Pod 数量的阈值。在<a href="https://www.ipyker.com/post/2020-2-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">本系列的下一个也是最后一部分</a>，我们将介绍如何使用它来控制同时发生的 drain 事件的数量，尽管我们采用了原始的方式为所有节点发出了 drain 调用请求。</p>
+<h1 id="备注">备注</h1>
+<ul>
+<li>原文：<a href="https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304">https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304</a></li>
+</ul>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    
+                    <li class="next">
+                        <a href="/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/" data-toggle="tooltip" data-placement="top" title="使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>

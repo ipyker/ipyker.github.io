@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="Kubernetes安装zookeeper 3.5.5" />
+    <meta property="og:title" content="Kubernetes安装zookeeper 3.5.5" />
+    <meta property="twitter:title" content="Kubernetes安装zookeeper 3.5.5" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>Kubernetes安装zookeeper 3.5.5-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/2021-04-19-k8s_zookeeper_cluster/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('/img/zookeeper-feature-image.png')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/zookeeper" title="zookeeper">
+                            zookeeper
+                        </a>
+                        
+                    </div>
+                    <h1>Kubernetes安装zookeeper 3.5.5</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Tuesday, August 27, 2019
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-准备zookeeper-statefulset文件">1. 准备zookeeper statefulset文件</a></li>
+    <li><a href="#2-为zookeeper准备图形界面">2. 为zookeeper准备图形界面</a></li>
+    <li><a href="#3附上脚本和dockerfile">3.附上脚本和Dockerfile</a></li>
+  </ul>
+</nav>
+                
+                <h1 id="1-准备zookeeper-statefulset文件">1. 准备zookeeper statefulset文件</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat zk-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: zoo
+spec:
+  serviceName: <span style="color:#f1fa8c">&#34;zoo&#34;</span>
+  replicas: <span style="color:#bd93f9">3</span>
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      terminationGracePeriodSeconds: <span style="color:#bd93f9">10</span>
+      containers:
+        - name: zookeeper
+          image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5
+          imagePullPolicy: IfNotPresent
+          readinessProbe:
+            httpGet:
+              path: /commands/ruok
+              port: <span style="color:#bd93f9">8080</span>
+            initialDelaySeconds: <span style="color:#bd93f9">10</span>
+            timeoutSeconds: <span style="color:#bd93f9">5</span>
+            periodSeconds: <span style="color:#bd93f9">3</span>
+          livenessProbe:
+            httpGet:
+              path: /commands/ruok
+              port: <span style="color:#bd93f9">8080</span>
+            initialDelaySeconds: <span style="color:#bd93f9">30</span>
+            timeoutSeconds: <span style="color:#bd93f9">5</span>
+            periodSeconds: <span style="color:#bd93f9">3</span>
+          env:
+            - name: ZOO_SERVERS
+              value: server.1<span style="color:#ff79c6">=</span>zoo-0.zoo:2888:3888;<span style="color:#bd93f9">2181</span> server.2<span style="color:#ff79c6">=</span>zoo-1.zoo:2888:3888;<span style="color:#bd93f9">2181</span> server.3<span style="color:#ff79c6">=</span>zoo-2.zoo:2888:3888;<span style="color:#bd93f9">2181</span>
+          ports:
+            - containerPort: <span style="color:#bd93f9">2181</span>
+              name: client
+            - containerPort: <span style="color:#bd93f9">2888</span>
+              name: peer
+            - containerPort: <span style="color:#bd93f9">3888</span>
+              name: leader-election
+          volumeMounts:
+            - name: datadir
+              mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: <span style="color:#ff79c6">[</span> <span style="color:#f1fa8c">&#34;ReadWriteOnce&#34;</span> <span style="color:#ff79c6">]</span>
+      storageClassName: <span style="color:#f1fa8c">&#34;nfs&#34;</span>
+      resources:
+        requests:
+          storage: 1Gi
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+spec:
+  type: NodePort
+  ports:
+  - port: <span style="color:#bd93f9">2181</span>
+    name: client
+    targetPort: <span style="color:#bd93f9">2181</span>
+  selector:
+    app: zookeeper
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoo
+spec:
+  ports:
+  - port: <span style="color:#bd93f9">2888</span>
+    name: peer
+  - port: <span style="color:#bd93f9">3888</span>
+    name: leader-election
+  clusterIP: None
+  selector:
+    app: zookeeper
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f zk-statefulset.yaml
+<span style="color:#6272a4"># 查看pod是否正常运行</span>
+$ kubectl get pod | grep zoo
+NAME                                      READY   STATUS    RESTARTS   AGE
+zoo-0                                     1/1     Running   <span style="color:#bd93f9">3</span>          6h
+zoo-1                                     1/1     Running   <span style="color:#bd93f9">0</span>          3h
+zoo-2                                     1/1     Running   <span style="color:#bd93f9">0</span>          3h
+</code></pre></div><h1 id="2-为zookeeper准备图形界面">2. 为zookeeper准备图形界面</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat zkui.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zkui
+  labels:
+    app: zkui
+spec:
+  type: NodePort
+  ports:
+  - port: <span style="color:#bd93f9">9090</span>
+    protocol: TCP
+    targetPort: <span style="color:#bd93f9">9090</span>
+  selector:
+    app: zkui
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: zkui
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  template:
+    metadata:
+      labels:
+        app: zkui
+    spec:
+      containers:
+      - name: zkui
+        image: registry.cn-shenzhen.aliyuncs.com/pyker/zkui:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ZK_SERVER
+<span style="color:#6272a4">#          value: &#34;zoo-1.zoo:2181,zoo-2.zoo:2181,zoo-0.zoo:2181&#34;</span>
+<span style="color:#6272a4"># 		   此处用选择的是node ip和 nodeport</span>
+          value: <span style="color:#f1fa8c">&#34;192.168.1.236:2181,192.168.1.236:2182,192.168.1.236:2183&#34;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f zkui.yaml
+<span style="color:#6272a4"># 查看pod是否正常运行</span>
+kubectl get pod | grep zkui
+NAME                                      READY   STATUS    RESTARTS   AGE
+zkui-6f65d8b8f8-m27rd                     1/1     Running   <span style="color:#bd93f9">1</span>          2d23h
+<span style="color:#6272a4"># 查看service状态</span>
+$ kubectl get svc | grep zkui
+zkui            NodePort    10.254.2.58     &lt;none&gt;        9090:30458/TCP      6d1h
+</code></pre></div><p>此时，可以看到zkui Pod的9090映射到宿主机的30458端口了。那么局域网的主机可以通过<code>http://nodeip:30458</code>方式访问zkui界面了。 我这里的默认帐号是admin，密码为manager。密码帐号可以在zkui的pod内的<code>/var/app/config.cfg</code>文件进行修改。</p>
+<h1 id="3附上脚本和dockerfile">3.附上脚本和Dockerfile</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat docker-entrypoint.sh
+<span style="color:#6272a4">#!/bin/bash</span>
+
+<span style="color:#8be9fd;font-style:italic">set</span> -e
+
+<span style="color:#6272a4"># Allow the container to be started with `--user`</span>
+<span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[[</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$1</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;zkServer.sh&#39;</span> <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>id -u<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;0&#39;</span> <span style="color:#ff79c6">]]</span>; <span style="color:#ff79c6">then</span>
+    chown -R zookeeper <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">exec</span> gosu zookeeper <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$0</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$@</span><span style="color:#f1fa8c">&#34;</span>
+<span style="color:#ff79c6">fi</span>
+
+<span style="color:#6272a4"># Generate the config only if it doesn&#39;t exist</span>
+<span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[[</span> ! -f <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">/zoo.cfg&#34;</span> <span style="color:#ff79c6">]]</span>; <span style="color:#ff79c6">then</span>
+    <span style="color:#8be9fd;font-style:italic">CONFIG</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">/zoo.cfg&#34;</span>
+
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;dataDir=</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;dataLogDir=</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;4lw.commands.whitelist=</span><span style="color:#8be9fd;font-style:italic">$ZOO_COMMANDS_WHITELIST</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;tickTime=</span><span style="color:#8be9fd;font-style:italic">$ZOO_TICK_TIME</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;initLimit=</span><span style="color:#8be9fd;font-style:italic">$ZOO_INIT_LIMIT</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;syncLimit=</span><span style="color:#8be9fd;font-style:italic">$ZOO_SYNC_LIMIT</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;autopurge.snapRetainCount=</span><span style="color:#8be9fd;font-style:italic">$ZOO_AUTOPURGE_SNAPRETAINCOUNT</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;autopurge.purgeInterval=</span><span style="color:#8be9fd;font-style:italic">$ZOO_AUTOPURGE_PURGEINTERVAL</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;maxClientCnxns=</span><span style="color:#8be9fd;font-style:italic">$ZOO_MAX_CLIENT_CNXNS</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;standaloneEnabled=</span><span style="color:#8be9fd;font-style:italic">$ZOO_STANDALONE_ENABLED</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;admin.enableServer=</span><span style="color:#8be9fd;font-style:italic">$ZOO_ADMINSERVER_ENABLED</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+
+    <span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[[</span> -z <span style="color:#8be9fd;font-style:italic">$ZOO_SERVERS</span> <span style="color:#ff79c6">]]</span>; <span style="color:#ff79c6">then</span>
+      <span style="color:#8be9fd;font-style:italic">ZOO_SERVERS</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;server.1=localhost:2888:3888;2181&#34;</span>
+    <span style="color:#ff79c6">fi</span>
+
+    <span style="color:#ff79c6">for</span> server in <span style="color:#8be9fd;font-style:italic">$ZOO_SERVERS</span>; <span style="color:#ff79c6">do</span>
+        <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$server</span><span style="color:#f1fa8c">&#34;</span> &gt;&gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$CONFIG</span><span style="color:#f1fa8c">&#34;</span>
+    <span style="color:#ff79c6">done</span>
+<span style="color:#ff79c6">fi</span>
+
+<span style="color:#8be9fd;font-style:italic">ZOO_MY_ID</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(($(</span>hostname | sed s/.*-//<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">+</span> <span style="color:#bd93f9">1</span><span style="color:#ff79c6">))</span>
+cp <span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span>/zoo.cfg <span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span>/zoo.cfg.org
+sed -i <span style="color:#f1fa8c">&#34;s/server\.</span><span style="color:#8be9fd;font-style:italic">$ZOO_MY_ID</span><span style="color:#f1fa8c">\=[a-z0-9.-]*/server.</span><span style="color:#8be9fd;font-style:italic">$ZOO_MY_ID</span><span style="color:#f1fa8c">=0.0.0.0/&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">/zoo.cfg&#34;</span>
+
+<span style="color:#6272a4"># Write myid only if it doesn&#39;t exist</span>
+<span style="color:#ff79c6">if</span> <span style="color:#ff79c6">[</span> ! -f <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">/myid&#34;</span> <span style="color:#ff79c6">]</span>; <span style="color:#ff79c6">then</span>
+    <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">ZOO_MY_ID</span><span style="color:#ff79c6">:-</span><span style="color:#8be9fd;font-style:italic">1</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span> &gt; <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">/myid&#34;</span>
+<span style="color:#ff79c6">fi</span>
+
+<span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$@</span><span style="color:#f1fa8c">&#34;</span>
+</code></pre></div><p>Dockerfile</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat Dockerfile
+FROM openjdk:8-jre-slim
+
+ENV <span style="color:#8be9fd;font-style:italic">ZOO_CONF_DIR</span><span style="color:#ff79c6">=</span>/conf <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_DATA_DIR</span><span style="color:#ff79c6">=</span>/data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_DATA_LOG_DIR</span><span style="color:#ff79c6">=</span>/datalog <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_LOG_DIR</span><span style="color:#ff79c6">=</span>/logs <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_TICK_TIME</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2000</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_INIT_LIMIT</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">5</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_SYNC_LIMIT</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_AUTOPURGE_PURGEINTERVAL</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_AUTOPURGE_SNAPRETAINCOUNT</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_MAX_CLIENT_CNXNS</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">60</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_STANDALONE_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_ADMINSERVER_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOO_COMMANDS_WHITELIST</span><span style="color:#ff79c6">=</span>*
+
+<span style="color:#6272a4"># Add a user with an explicit UID/GID and create necessary directories</span>
+RUN <span style="color:#8be9fd;font-style:italic">set</span> -eux; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    groupadd -r zookeeper --gid<span style="color:#ff79c6">=</span>1000; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    useradd -r -g zookeeper --uid<span style="color:#ff79c6">=</span><span style="color:#bd93f9">1000</span> zookeeper; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    mkdir -p <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    chown zookeeper:zookeeper <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span>
+
+<span style="color:#6272a4"># Install required packges</span>
+RUN <span style="color:#8be9fd;font-style:italic">set</span> -eux; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    apt-get update; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">DEBIAN_FRONTEND</span><span style="color:#ff79c6">=</span>noninteractive <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    apt-get install -y --no-install-recommends <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        ca-certificates <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        dirmngr <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        gosu <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        gnupg <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        netcat <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>        wget; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    rm -rf /var/lib/apt/lists/*; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span><span style="color:#6272a4"># Verify that gosu binary works</span>
+    gosu nobody <span style="color:#8be9fd;font-style:italic">true</span>
+
+ARG <span style="color:#8be9fd;font-style:italic">GPG_KEY</span><span style="color:#ff79c6">=</span>3F7A1D16FA4217B1DC75E1C9FFE35B7F15DFA1BA
+ARG <span style="color:#8be9fd;font-style:italic">SHORT_DISTRO_NAME</span><span style="color:#ff79c6">=</span>zookeeper-3.5.5
+ARG <span style="color:#8be9fd;font-style:italic">DISTRO_NAME</span><span style="color:#ff79c6">=</span>apache-zookeeper-3.5.5-bin
+
+<span style="color:#6272a4"># Download Apache Zookeeper, verify its PGP signature, untar and clean up</span>
+COPY apache-zookeeper-3.5.5-bin.tar.gz ./
+RUN <span style="color:#8be9fd;font-style:italic">set</span> -eux; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span><span style="color:#6272a4">#    wget -q &#34;https://www.apache.org/dist/zookeeper/$SHORT_DISTRO_NAME/$DISTRO_NAME.tar.gz&#34;; \</span>
+    wget -q <span style="color:#f1fa8c">&#34;https://www.apache.org/dist/zookeeper/</span><span style="color:#8be9fd;font-style:italic">$SHORT_DISTRO_NAME</span><span style="color:#f1fa8c">/</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz.asc&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">GNUPGHOME</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>mktemp -d<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    gpg --keyserver ha.pool.sks-keyservers.net --recv-key <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$GPG_KEY</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#ff79c6">||</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    gpg --keyserver pgp.mit.edu --recv-keys <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$GPG_KEY</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#ff79c6">||</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    gpg --keyserver keyserver.pgp.com --recv-keys <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$GPG_KEY</span><span style="color:#f1fa8c">&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    gpg --batch --verify <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz.asc&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    tar -zxf <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    mv <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">/conf/&#34;</span>* <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span><span style="color:#f1fa8c">&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    rm -rf <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$GNUPGHOME</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">.tar.gz.asc&#34;</span>; <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    chown -R zookeeper:zookeeper <span style="color:#f1fa8c">&#34;/</span><span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span><span style="color:#f1fa8c">&#34;</span>
+
+WORKDIR <span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span>
+VOLUME <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_DIR</span><span style="color:#f1fa8c">&#34;</span>, <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_DATA_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span>, <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ZOO_LOG_DIR</span><span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">]</span>
+
+EXPOSE <span style="color:#bd93f9">2181</span> <span style="color:#bd93f9">2888</span> <span style="color:#bd93f9">3888</span> <span style="color:#bd93f9">8080</span>
+
+ENV <span style="color:#8be9fd;font-style:italic">PATH</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$PATH</span>:/<span style="color:#8be9fd;font-style:italic">$DISTRO_NAME</span>/bin <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>    <span style="color:#8be9fd;font-style:italic">ZOOCFGDIR</span><span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$ZOO_CONF_DIR</span>
+
+COPY docker-entrypoint.sh /
+ENTRYPOINT <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;/docker-entrypoint.sh&#34;</span><span style="color:#ff79c6">]</span>
+CMD <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;zkServer.sh&#34;</span>, <span style="color:#f1fa8c">&#34;start-foreground&#34;</span><span style="color:#ff79c6">]</span>
+</code></pre></div>
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/2020-11-01-k8s_error_status/" data-toggle="tooltip" data-placement="top" title="Kubernetes常见的Pod 状态">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/post/2021-04-19-k8s_node_upgrade/" data-toggle="tooltip" data-placement="top" title="Kubernetes集群升级etcd故障处理">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>

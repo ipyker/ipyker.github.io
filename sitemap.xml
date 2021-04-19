@@ -43,6 +43,26 @@
   </url>
   
   <url>
+    <loc>https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/</loc>
+    <lastmod>2019-08-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/zookeeper/</loc>
+    <lastmod>2019-08-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/2020-11-01-k8s_error_status/</loc>
+    <lastmod>2018-06-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/pod/</loc>
+    <lastmod>2018-06-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.ipyker.com/top/about/</loc>
     <lastmod>2017-11-07T00:00:00+00:00</lastmod>
   </url>
@@ -66,7 +86,23 @@
   </url>
   
   <url>
+    <loc>https://www.ipyker.com/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/</loc>
+  </url>
+  
+  <url>
     <loc>https://www.ipyker.com/search/</loc>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/</loc>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/</loc>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/</loc>
   </url>
   
 </urlset>

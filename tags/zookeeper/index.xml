@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>zookeeper on 云原生与运维</title>
+    <link>https://www.ipyker.com/tags/zookeeper/</link>
+    <description>Recent content in zookeeper on 云原生与运维</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 27 Aug 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kubernetes安装zookeeper 3.5.5</title>
+      <link>https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/</link>
+      <pubDate>Tue, 27 Aug 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/</guid>
+      <description>1. 准备zookeeper statefulset文件 $ cat zk-statefulset.yaml apiVersion: apps/v1beta1 kind: StatefulSet metadata: name: zoo spec: serviceName: &amp;#34;zoo&amp;#34; replicas: 3 template: metadata: labels: app: zookeeper spec: terminationGracePeriodSeconds: 10 containers: - name: zookeeper image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5 imagePullPolicy: IfNotPresent readinessProbe: httpGet: path: /commands/ruok port: 8080 initialDelaySeconds: 10 timeoutSeconds: 5 periodSeconds: 3 livenessProbe: httpGet:</description>
+    </item>
+    
+  </channel>
+</rss>

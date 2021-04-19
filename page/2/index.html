@@ -97,15 +97,11 @@
                     
                         
                         <li>
-                            <a href="/categories/life">life</a>
+                            <a href="/categories/owner">owner</a>
                         </li>
                         
                         <li>
                             <a href="/categories/tech">tech</a>
-                        </li>
-                        
-                        <li>
-                            <a href="/categories/tips">tips</a>
                         </li>
                         
                     
@@ -190,100 +186,19 @@
             
 
 <div class="post-preview">
-    <a href="https://www.ipyker.com/2018/05/23/service_2_service_auth/">
+    <a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">
         <h2 class="post-title">
-            微服务安全沉思录之二
+            使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）
         </h2>
-	
-        <h3 class="post-subtitle">
-            服务间认证与鉴权
-        </h3>
 	
         <div class="post-content-preview">
 	
-            除来自用户的访问请求以外，微服务应用中的各个微服务相互之间还有大量的访问,根据应用系统数据敏感程度不同，对于系统内微服务的访问也需要进行相应的安全控制。
-        
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by     &#34;赵化冰&#34; Wednesday, May 23, 2018
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/2018/05/22/user_authentication_authorization/">
-        <h2 class="post-title">
-            微服务安全沉思录之一
-        </h2>
-	
-        <h3 class="post-subtitle">
-            用户访问认证与鉴权
-        </h3>
-	
-        <div class="post-content-preview">
-	
-            这段时间对之前微服务安全相关的一些想法进行了进一步总结和归纳，理清在之前文章里面没有想得太清楚的地方，例如服务间的认证与鉴权以及用户身份在服务调用链中的传递。在这一系列博客里面将分为三个部分对微服务安全进行系统阐述：用户访问认证与鉴权，服务间认证与鉴权，外部系统访问控制。
-        
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by     &#34;赵化冰&#34; Wednesday, May 23, 2018
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/2018/05/23/istio-auto-injection-with-webhook/">
-        <h2 class="post-title">
-            Istio Sidecar自动注入原理
-        </h2>
-	
-        <h3 class="post-subtitle">
-            Kubernetes webhook扩展机制解析
-        </h3>
-	
-        <div class="post-content-preview">
-	
-            Kubernets 1.9版本引入了Admission Webhook(web 回调)扩展机制，通过Webhook,开发者可以非常灵活地对Kubernets API Server的功能进行扩展，在API Server创建资源时对资源进行验证或者修改。 Istio 0.7版本就利用了Kubernets webhook实现了sidecar的自动注入。
-        
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by     &#34;赵化冰&#34; Wednesday, May 23, 2018
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/2018/05/01/may-day-jiulonghu/">
-        <h2 class="post-title">
-            川西秘境探险
-        </h2>
-	
-        <h3 class="post-subtitle">
-            2018五一甘堡藏寨，九龙湖自驾游记
-        </h3>
-	
-        <div class="post-content-preview">
-	
-            <h2 id="寻浮云牧场不遇">寻浮云牧场不遇</h2>
-<p>五一节前的一周内，几个朋友就纷纷坐不住了，一个二个不再安心上班，开始在微信群里讨论过节要到哪里耍。
-大家思来想去，最后决定还是去理县方向。因为根据多年自驾的经验，只要出了汶川，沿途都是风景。</p>
+            使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介
        
         </div>
     </a>
     <p class="post-meta">
-    Posted by 赵化冰 Tuesday, May 1, 2018
+    Posted by      &#34;Pyker&#34; Monday, January 1, 0001
     
     
     </p>
@@ -292,23 +207,19 @@
 <hr>
 
 <div class="post-preview">
-    <a href="https://www.ipyker.com/2018/04/16/using-helm-to-deploy-to-kubernetes/">
+    <a href="https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/">
         <h2 class="post-title">
-            Helm介绍
+            延迟关闭以等待 Pod 删除传播 （三）
         </h2>
-	
-        <h3 class="post-subtitle">
-            强大的Kubernetes包管理工具
-        </h3>
 	
         <div class="post-content-preview">
 	
-            Helm是Kubernetes生态系统中的一个软件包管理工具。本文将介绍为何要使用Helm进行Kubernetes软件包管理，澄清Helm中使用到的相关概念，并通过一个具体的示例学习如何使用Helm打包，分发，安装，升级及回退Kubernetes应用。
-        
+            延迟关闭 Kubernetes 中的 Pod 这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命
+       
         </div>
     </a>
     <p class="post-meta">
-    Posted by 赵化冰 Monday, April 16, 2018
+    Posted by      &#34;&#34; Monday, January 1, 0001
     
     
     </p>
@@ -326,10 +237,6 @@
         <a href="/">&larr; Newer Posts</a>
     </li>
     
-    
-    <li class="next">
-        <a href="/page/3/">Older Posts &rarr;</a>
-    </li>
     
 </ul>
 
@@ -355,53 +262,15 @@
                
             
                
-                    <a href="/tags/docker" title="docker">
-                        docker
-                    </a>
-               
-            
-               
-            
-               
-                    <a href="/tags/istio" title="istio">
-                        istio
-                    </a>
-               
-            
-               
                     <a href="/tags/kubernetes" title="kubernetes">
                         kubernetes
                     </a>
                
             
                
-                    <a href="/tags/microservice" title="microservice">
-                        microservice
+                    <a href="/tags/pod" title="pod">
+                        pod
                     </a>
-               
-            
-               
-            
-               
-                    <a href="/tags/security" title="security">
-                        security
-                    </a>
-               
-            
-               
-                    <a href="/tags/service-mesh" title="service-mesh">
-                        service-mesh
-                    </a>
-               
-            
-               
-                    <a href="/tags/tips" title="tips">
-                        tips
-                    </a>
-               
-            
-               
-            
                
             
                
@@ -421,7 +290,7 @@
             </a>
             
             
-                <p>Software Developer, Open Source Enthusiast and Life Adventurer</p>
+                <p>资深运维，热爱云原生，开源爱好者，欢迎来探讨技术！</p>
             
            
            <ul class="list-inline">

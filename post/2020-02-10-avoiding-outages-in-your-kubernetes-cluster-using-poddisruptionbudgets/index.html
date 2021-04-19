@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）" />
+    <meta property="og:title" content="使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）" />
+    <meta property="twitter:title" content="使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('/img/post-bg-coffee.jpeg')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                    </div>
+                    <h1>使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Monday, January 1, 0001
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#poddisruptionbudgets预算可容忍的故障数">PodDisruptionBudgets：预算可容忍的故障数</a></li>
+    <li><a href="#示例">示例</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#备注">备注</a></li>
+  </ul>
+</nav>
+                
+                <p>
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-1.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-1">
+
+</p>
+<blockquote>
+<p>使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐</p>
+</blockquote>
+<p>这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（<a href="https://www.ipyker.com/post/2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">第二部分</a>和<a href="https://www.ipyker.com/post/2020-2-16-delaying-shutdown-to-wait-for-pod-deletion-propagation/">第三部分</a>中，我们重点介绍了如何优雅关闭集群中存在的 Pod。我们介绍了如何使用 <code>preStop</code> 钩子优雅关闭 Pod，以及为何在序列中增加延迟以等待删除事件在集群中传播很重要。这可以处理一个 Pod 的终止，但不能阻止我们关闭太多 Pod 导致我们的服务无法正常运行。在本文中，我们将使用 <a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#how-disruption-budgets-work">PodDisruptionBudgets</a>（或者简称为 PDB）来减轻这种风险。</p>
+<h1 id="poddisruptionbudgets预算可容忍的故障数">PodDisruptionBudgets：预算可容忍的故障数</h1>
+<p>Pod 中断预算是一类 Pod 在给定时间可以容忍的中断数量的指标（故障预算）。每当计算出服务中的 Pod 中断导致 Service 降至预算以下时，操作就会暂停，直到可以维持预算为止。这意味着在等待更多 Pod 可用之前，可以暂时停止 drain 事件，以免驱逐 Pod 而超出预算。</p>
+<p>要配置一个 Pod 中断预算，我们需要创建一个与 Service 中的 Pod 相匹配的 PodDisruptionBudgets 资源。例如，如果我们想要创建一个 Pod 中断预算，而我们总是希望至少有一个 Nginx Pod 可用于我们的示例 Deployment，我们将应用以下配置：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">apiVersion</span>: policy/v1beta1
+<span style="color:#ff79c6">kind</span>: PodDisruptionBudget
+<span style="color:#ff79c6">metadata</span>:
+  <span style="color:#ff79c6">name</span>: nginx-pdb
+<span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">minAvailable</span>: <span style="color:#bd93f9">1</span>
+  <span style="color:#ff79c6">selector</span>:
+    <span style="color:#ff79c6">matchLabels</span>:
+      <span style="color:#ff79c6">app</span>: nginx
+</code></pre></div><p>这向 Kubernetes 表示我们希望至少有一个与标签 <code>app: nginx</code> 匹配的 Pod 在任何给定时间可用。使用此方法，我们可以促使 Kubernetes 在替换第 2 个 drain 请求中的 Pod 之前先等待第一个 drain 请求中的 Pod 被替换。</p>
+<h1 id="示例">示例</h1>
+<p>为了说明它是如何工作的，让我们回到我们的示例。为了简单起见，在此示例中，我们将忽略所有的 <code>preStop</code> 钩子、就绪探针和服务请求。我们还将假设我们要对集群节点进行一对一替换。这意味着我们将通过使节点数量加倍来扩展集群，并使新节点运行新镜像。</p>
+<p>因此，我们从两个节点的初始集群开始：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-2.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-2">
+
+</p>
+<p>我们在此处提供了两个额外的节点，用于运行新的 VM 镜像。我们最终将旧节点上的所有 Pod 替换为新节点：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-3.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-3">
+
+</p>
+<p>要替换 Pod，我们首先需要清空旧节点。在此示例中，让我们看看同时向 Nginx Pod 的两个节点发出 drain 命令时会发生什么。Drain 请求将在两个线程中发出（实际上，这只是两个终端选项卡），每个线程管理一个节点的 drain 序列。</p>
+<p>请注意，到目前为止，我们通过假设 drain 命令立即发出驱逐请求来简化示例。实际上，drain 操作首先涉及对节点进行污染（具有 <code>NoSchedule</code> 污染标签），以便不会在节点上调度新的 Pod。对于此示例，我们将分别查看两个阶段。</p>
+<p>因此，开始时，管理 drain 序列的两个线程将污染节点，从而不会调度新的 Pod：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-4.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-4">
+
+</p>
+<p>污染完成后，drain 线程将开始逐出节点上的 Pod。作为此操作的一部分，drain 线程将查询控制平面，以查看驱逐是否会导致 Service 下降到配置的 Pod 中断预算（PDB）以下。</p>
+<p>请注意，控制平面将序列化请求，一次处理一个 PDB 查询。这样，在这种情况下，控制平面将成功响应其中一个请求，而使另一个请求失败。这是因为第一个请求基于两个可用的 Pod。允许此请求会将可用的 Pod 数量减少到 1，这意味着预算得以维持。当它允许请求继续进行时，然后将其中一个 Pod 逐出，从而变得不可用。到那时，当处理第二个请求时，控制平面将拒绝它，因为允许该请求会将可用容器的数量降至 0，低于我们配置的预算。</p>
+<p>鉴于此，在此示例中，我们将假定节点 1 是获得成功响应的节点。在这种情况下，节点 1 的 drain 线程将继续驱逐 Pod，而节点 2 的 drain 线程将等待并稍后重试：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-5.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-5">
+
+
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-6.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-6">
+
+</p>
+<p>驱逐节点 1 中的 Pod 后，<code>Deployment</code> 控制器会立即在可用节点之一中重新创建 Pod。在这种情况下，由于我们的旧节点被 <code>NoSchedule</code> 污染，因此调度器将选择新节点之一：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-7.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-7">
+
+</p>
+<p>至此，既然已经成功在新节点上替换了 Pod，并且 drain 了初始节点，那么用于 drain 节点 1 的线程就完成了。</p>
+<p>从这一点开始，当节点 2 的 drain 线程再次尝试向控制平面查询有关 PDB 时，它将成功。这是因为有一个正在运行的 Pod 不在考虑之列，因此，让节点 2 的 drain 线程继续运行不会将可用 Pod 的数量降低到预算以下。因此线程继续运行以驱逐 Pod，并最终完成驱逐过程：
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-8.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-8">
+
+
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-9.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-9">
+
+
+
+  <img src="/img/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-10.png" alt="avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-10">
+
+</p>
+<p>这样，我们就成功地将两个 Pod 都迁移到了新节点上，而且没有遇到没有 Pod 可用于为应用程序提供服务的情况。此外，我们不需要在两个线程之间有任何协调逻辑，因为 Kubernetes 会根据我们提供的配置为我们处理所有工作！</p>
+<h1 id="总结">总结</h1>
+<p>最后将所有这些联系在一起，在本博客系列文章中，我们介绍了：</p>
+<ul>
+<li>如何使用生命周期钩子来实现优雅关闭我们的应用程序的功能，以使它们不会突然中止。</li>
+<li>如何从系统中移除 Pod，以及为什么必须在关闭序列中引入延迟。</li>
+<li>如何指定 Pod 中断预算，以确保我们始终有一定数量的 Pod 可用，以便在中断情况下为功能正常的应用程序持续提供服务。</li>
+</ul>
+<p>当所有这些功能一起使用时，我们可以实现零实例更新停机时间的目标！</p>
+<p>但是不要只听我的话！继续进行此配置。您甚至可以利用 terratest 编写自动化测试，这可以利用 <a href="https://godoc.org/github.com/gruntwork-io/terratest/modules/k8s">k8s 模块</a>中的功能以及<a href="https://godoc.org/github.com/gruntwork-io/terratest/modules/http-helper#ContinuouslyCheckUrl">连续检查 endpoint 的能力</a>。毕竟，<a href="https://blog.gruntwork.io/5-lessons-learned-from-writing-over-300-000-lines-of-infrastructure-code-36ba7fadeac1">我们从编写 30 万行基础结构代码中学到的重要经验</a>之一就是，没有自动化测试的基础结构代码是不完整的。</p>
+<h1 id="备注">备注</h1>
+<ul>
+<li>原文：<a href="https://blog.gruntwork.io/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-ef6a4baa5085">https://blog.gruntwork.io/avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets-ef6a4baa5085</a></li>
+</ul>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/" data-toggle="tooltip" data-placement="top" title="延迟关闭以等待 Pod 删除传播 （三）">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/" data-toggle="tooltip" data-placement="top" title="优雅关闭 Kubernetes 集群中的 Pod （二）">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>

@@ -17,6 +17,24 @@
     </item>
     
     <item>
+      <title>Kubernetes安装zookeeper 3.5.5</title>
+      <link>https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/</link>
+      <pubDate>Tue, 27 Aug 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/</guid>
+      <description>1. 准备zookeeper statefulset文件 $ cat zk-statefulset.yaml apiVersion: apps/v1beta1 kind: StatefulSet metadata: name: zoo spec: serviceName: &amp;#34;zoo&amp;#34; replicas: 3 template: metadata: labels: app: zookeeper spec: terminationGracePeriodSeconds: 10 containers: - name: zookeeper image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5 imagePullPolicy: IfNotPresent readinessProbe: httpGet: path: /commands/ruok port: 8080 initialDelaySeconds: 10 timeoutSeconds: 5 periodSeconds: 3 livenessProbe: httpGet:</description>
+    </item>
+    
+    <item>
+      <title>Kubernetes常见的Pod 状态</title>
+      <link>https://www.ipyker.com/post/2020-11-01-k8s_error_status/</link>
+      <pubDate>Mon, 04 Jun 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-11-01-k8s_error_status/</guid>
+      <description>通常我们在部署运行pod时，Pod常见以下几种状态，下面记一下： 1. 启动时错误 ImagePullBackoff：无法检索Pod容器的image</description>
+    </item>
+    
+    <item>
       <title>About me</title>
       <link>https://www.ipyker.com/top/about/</link>
       <pubDate>Tue, 07 Nov 2017 00:00:00 +0000</pubDate>
@@ -41,6 +59,42 @@
       
       <guid>https://www.ipyker.com/top/books/</guid>
       <description>Booking&amp;hellip;. </description>
+    </item>
+    
+    <item>
+      <title>Kubernetes 集群的零停机服务器更新 （一）</title>
+      <link>https://www.ipyker.com/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/</guid>
+      <description>Kubernetes 集群的滚动更新 在 Kubernetes 集群的生命周期中的某个时候，您将需要对基础节点执行维护。这可能包括程序包更新、内核升级或部署新的 VM 镜像。在 Kubernetes 中，被视为“</description>
+    </item>
+    
+    <item>
+      <title>优雅关闭 Kubernetes 集群中的 Pod （二）</title>
+      <link>https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/</guid>
+      <description>优雅停止 Kubernetes 中的容器 这是实现 Kubernetes 集群零停机时间更新旅程的第二部分。在本系列的第一部分中，我们提出了原生的 drain 集群中节点的问题和挑战。在本文中，我们</description>
+    </item>
+    
+    <item>
+      <title>使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）</title>
+      <link>https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/</guid>
+      <description>使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介</description>
+    </item>
+    
+    <item>
+      <title>延迟关闭以等待 Pod 删除传播 （三）</title>
+      <link>https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/</guid>
+      <description>延迟关闭 Kubernetes 中的 Pod 这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命</description>
     </item>
     
   </channel>

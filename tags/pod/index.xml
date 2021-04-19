@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pod on 云原生与运维</title>
+    <link>https://www.ipyker.com/tags/pod/</link>
+    <description>Recent content in Pod on 云原生与运维</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 04 Jun 2018 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/pod/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kubernetes常见的Pod 状态</title>
+      <link>https://www.ipyker.com/post/2020-11-01-k8s_error_status/</link>
+      <pubDate>Mon, 04 Jun 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-11-01-k8s_error_status/</guid>
+      <description>通常我们在部署运行pod时，Pod常见以下几种状态，下面记一下： 1. 启动时错误 ImagePullBackoff：无法检索Pod容器的image</description>
+    </item>
+    
+    <item>
+      <title>优雅关闭 Kubernetes 集群中的 Pod （二）</title>
+      <link>https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/</guid>
+      <description>优雅停止 Kubernetes 中的容器 这是实现 Kubernetes 集群零停机时间更新旅程的第二部分。在本系列的第一部分中，我们提出了原生的 drain 集群中节点的问题和挑战。在本文中，我们</description>
+    </item>
+    
+  </channel>
+</rss>
