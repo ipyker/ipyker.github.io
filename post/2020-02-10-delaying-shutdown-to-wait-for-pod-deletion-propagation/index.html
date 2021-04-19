@@ -225,7 +225,7 @@
 <blockquote>
 <p>延迟关闭 Kubernetes 中的 Pod</p>
 </blockquote>
-<p>这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而减轻了因不正常关机而导致的停机时间。但是我们还了解到，启动关闭序列后，Pod 可能会继续接收流量。这意味着最终客户端可能会收到错误消息，因为它们被路由到了不再能够为流量提供服务的 Pod。理想情况下，我们希望 Pod 在被逐出后立即停止接收流量。为了减轻这种情况，我们必须首先了解为什么会这样。</p>
+<p>这是实现 Kubernetes 集群零停机时间更新的<a href="%7Bhttps://www.ipyker.com/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/">旅程</a>的第三部分。在<a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster">本系列的第二部分</a>中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而减轻了因不正常关机而导致的停机时间。但是我们还了解到，启动关闭序列后，Pod 可能会继续接收流量。这意味着最终客户端可能会收到错误消息，因为它们被路由到了不再能够为流量提供服务的 Pod。理想情况下，我们希望 Pod 在被逐出后立即停止接收流量。为了减轻这种情况，我们必须首先了解为什么会这样。</p>
 <p><em>这篇文章中的许多信息都是从 MarkoLukša 的“<a href="https://www.manning.com/books/kubernetes-in-action">Kubernetes in Action</a>”一书中学到的。您可以在<a href="https://freecontent.manning.com/handling-client-requests-properly-with-kubernetes/">此处</a>找到相关部分的节选。除了此处介绍的材料外，本书还提供了在 Kubernetes 上运行应用程序的最佳时间的出色描述，我们强烈建议您阅读。</em></p>
 <h1 id="pod-关闭序列">Pod 关闭序列</h1>
 <p>在<a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">上一篇文章中</a>，我们介绍了 Pod 驱逐生命周期。如果你从该文章中回想起，逐出序列的第一步是要删除 Pod，这会引发一系列事件，最终导致 Pod 从系统中删除。但是，我们并没有谈论的是，如何从 <code>Service</code> 中注销 Pod，以使其停止接收流量。</p>

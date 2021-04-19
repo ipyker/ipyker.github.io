@@ -85,7 +85,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/</guid>
-      <description>使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介</description>
+      <description>使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新旅程的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介绍了如何优雅关闭集群</description>
     </item>
     
     <item>
@@ -94,7 +94,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/</guid>
-      <description>延迟关闭 Kubernetes 中的 Pod 这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命</description>
+      <description>延迟关闭 Kubernetes 中的 Pod 这是实现 Kubernetes 集群零停机时间更新的旅程的第三部分。在本系列的第二部分中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而</description>
     </item>
     
   </channel>
