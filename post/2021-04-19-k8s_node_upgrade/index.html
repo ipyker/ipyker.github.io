@@ -228,7 +228,7 @@
                 <h2 id="1-升级">1. 升级</h2>
 <p>将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ yum install -y <span style="color:#8be9fd;font-style:italic">kubeadm</span><span style="color:#ff79c6">=</span>1.18.3 <span style="color:#8be9fd;font-style:italic">kubectl</span><span style="color:#ff79c6">=</span>1.18.3 <span style="color:#8be9fd;font-style:italic">kubelet</span><span style="color:#ff79c6">=</span>1.18.3
-$ kubeadm config images list <span style="color:#6272a4"># 列出新版本需要的镜像，然后先拉取</span>
+$ kubeadm config images list <span style="color:#6272a4"># 列出新版本需要的镜像，然后拉取。</span>
 $ kubeadm upgrade apply v1.18.3
 </code></pre></div><h2 id="2-扩容">2. 扩容</h2>
 <p>在当前的集群中新增节点：</p>
