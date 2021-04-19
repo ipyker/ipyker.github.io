@@ -224,7 +224,7 @@
 <blockquote>
 <p>使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐</p>
 </blockquote>
-<p>这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（<a href="https://www.ipyker.com/post/2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">第二部分</a>和<a href="https://www.ipyker.com/post/2020-2-16-delaying-shutdown-to-wait-for-pod-deletion-propagation/">第三部分</a>中，我们重点介绍了如何优雅关闭集群中存在的 Pod。我们介绍了如何使用 <code>preStop</code> 钩子优雅关闭 Pod，以及为何在序列中增加延迟以等待删除事件在集群中传播很重要。这可以处理一个 Pod 的终止，但不能阻止我们关闭太多 Pod 导致我们的服务无法正常运行。在本文中，我们将使用 <a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#how-disruption-budgets-work">PodDisruptionBudgets</a>（或者简称为 PDB）来减轻这种风险。</p>
+<p>这是实现 Kubernetes 集群零停机时间更新[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第 4 部分。在前两篇文章（<a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">第二部分</a>和<a href="https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/">第三部分</a>中，我们重点介绍了如何优雅关闭集群中存在的 Pod。我们介绍了如何使用 <code>preStop</code> 钩子优雅关闭 Pod，以及为何在序列中增加延迟以等待删除事件在集群中传播很重要。这可以处理一个 Pod 的终止，但不能阻止我们关闭太多 Pod 导致我们的服务无法正常运行。在本文中，我们将使用 <a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#how-disruption-budgets-work">PodDisruptionBudgets</a>（或者简称为 PDB）来减轻这种风险。</p>
 <h1 id="poddisruptionbudgets预算可容忍的故障数">PodDisruptionBudgets：预算可容忍的故障数</h1>
 <p>Pod 中断预算是一类 Pod 在给定时间可以容忍的中断数量的指标（故障预算）。每当计算出服务中的 Pod 中断导致 Service 降至预算以下时，操作就会暂停，直到可以维持预算为止。这意味着在等待更多 Pod 可用之前，可以暂时停止 drain 事件，以免驱逐 Pod 而超出预算。</p>
 <p>要配置一个 Pod 中断预算，我们需要创建一个与 Service 中的 Pod 相匹配的 PodDisruptionBudgets 资源。例如，如果我们想要创建一个 Pod 中断预算，而我们总是希望至少有一个 Nginx Pod 可用于我们的示例 Deployment，我们将应用以下配置：</p>

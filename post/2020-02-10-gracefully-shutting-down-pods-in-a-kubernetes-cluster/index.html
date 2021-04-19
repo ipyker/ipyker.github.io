@@ -227,7 +227,7 @@
 <blockquote>
 <p>优雅停止 Kubernetes 中的容器</p>
 </blockquote>
-<p>这是实现 Kubernetes 集群零停机时间更新<a href="https://www.ipyker.com/post/2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster/">旅程</a>的第二部分。在<a href="https://www.ipyker.com/post/2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster/">本系列的第一部分</a>中，我们提出了原生的 drain 集群中节点的问题和挑战。在本文中，我们将介绍如何解决这些问题中的一个：优雅关闭 Pod。</p>
+<p>这是实现 Kubernetes 集群零停机时间更新<a href="https://www.ipyker.com/post/2020-2-10-zero-downtime-server-updates-for-your-kubernetes-cluster/">旅程</a>的第二部分。在<a href="https://www.ipyker.com/post/2020-2-10-zero-downtime-server-updates-for-your-kubernetes-cluster/">本系列的第一部分</a>中，我们提出了原生的 drain 集群中节点的问题和挑战。在本文中，我们将介绍如何解决这些问题中的一个：优雅关闭 Pod。</p>
 <h1 id="pod-驱逐生命周期">Pod 驱逐生命周期</h1>
 <p>默认情况下，<code>kubectl drain</code> 将以某种方式驱逐 Pod，以遵从 Pod 生命周期。实际上，这意味着它将遵循以下流程：</p>
 <ul>

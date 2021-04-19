@@ -228,7 +228,7 @@
 <p>这是实现 Kubernetes 集群零停机时间更新的[旅程]({% post_url 2020-2-16-zero-downtime-server-updates-for-your-kubernetes-cluster %})的第三部分。在[本系列的第二部分]({% post_url 2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster %})中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而减轻了因不正常关机而导致的停机时间。但是我们还了解到，启动关闭序列后，Pod 可能会继续接收流量。这意味着最终客户端可能会收到错误消息，因为它们被路由到了不再能够为流量提供服务的 Pod。理想情况下，我们希望 Pod 在被逐出后立即停止接收流量。为了减轻这种情况，我们必须首先了解为什么会这样。</p>
 <p><em>这篇文章中的许多信息都是从 MarkoLukša 的“<a href="https://www.manning.com/books/kubernetes-in-action">Kubernetes in Action</a>”一书中学到的。您可以在<a href="https://freecontent.manning.com/handling-client-requests-properly-with-kubernetes/">此处</a>找到相关部分的节选。除了此处介绍的材料外，本书还提供了在 Kubernetes 上运行应用程序的最佳时间的出色描述，我们强烈建议您阅读。</em></p>
 <h1 id="pod-关闭序列">Pod 关闭序列</h1>
-<p>在<a href="https://www.ipyker.com/post/2020-2-16-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">上一篇文章中</a>，我们介绍了 Pod 驱逐生命周期。如果你从该文章中回想起，逐出序列的第一步是要删除 Pod，这会引发一系列事件，最终导致 Pod 从系统中删除。但是，我们并没有谈论的是，如何从 <code>Service</code> 中注销 Pod，以使其停止接收流量。</p>
+<p>在<a href="https://www.ipyker.com/post/2020-2-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">上一篇文章中</a>，我们介绍了 Pod 驱逐生命周期。如果你从该文章中回想起，逐出序列的第一步是要删除 Pod，这会引发一系列事件，最终导致 Pod 从系统中删除。但是，我们并没有谈论的是，如何从 <code>Service</code> 中注销 Pod，以使其停止接收流量。</p>
 <p>那么，是什么原因导致 Pod 从 <code>Service</code> 中被删除呢？为了理解这一点，我们需要更深入地了解从集群中删除 Pod 时会发生什么？</p>
 <p>通过 API 将 Pod 从集群中删除后，所有发生的事情就是该 Pod 在元数据服务器中被标记为要删除。这会向所有相关子系统发送一个 Pod 删除通知，然后处理该通知：</p>
 <ul>
@@ -277,7 +277,7 @@
   <img src="/img/delaying-shutdown-to-wait-for-pod-deletion-propagation-5.png" alt="delaying-shutdown-to-wait-for-pod-deletion-propagation-5">
 
 </p>
-<p>此时，可以安全地在节点 1 上进行任何升级，包括重新引导节点以加载新的内核版本。如果我们启动了一个新节点来容纳已经在其上运行的工作负载，那么我们也可以关闭该节点（请参阅<a href="https://www.ipyker.com/post/2020-2-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">下一节 PodDisruptionBugdgets</a>）。</p>
+<p>此时，可以安全地在节点 1 上进行任何升级，包括重新引导节点以加载新的内核版本。如果我们启动了一个新节点来容纳已经在其上运行的工作负载，那么我们也可以关闭该节点（请参阅<a href="https://www.ipyker.com/post/2020-2-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">下一节 PodDisruptionBugdgets</a>）。</p>
 <h1 id="重建-pod">重建 Pod</h1>
 <p>如果到目前为止，您可能想知道我们如何重新创建最初在节点上调度的 Pod。现在我们知道了如何优雅关闭 Pod，但是如果要恢复运行的 Pod 的原始数量至关重要，该怎么办？这是 <code>Deployment</code> 资源发挥作用的地方。</p>
 <p><code>Deployment</code> 被称为<a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">控制器</a>，它负责在集群上维护指定的所需状态。如果您还记得我们的资源配置，我们并没有直接在配置中创建 Pod。取而代之的是，我们通过使用 <code>Deployment</code> 资源为模板提供如何创建 Pod 的模板，从而自动为我们管理 Pod。这是我们配置中的 <code>template</code> 部分：</p>
@@ -299,7 +299,7 @@
 <p>总而言之，由于 <code>preStop</code> 钩子中有足够的延迟和优雅终止，我们现在可以在单个节点上正常关闭 Pod。利用 <code>Deployment</code> 资源，我们可以自动重新创建关闭的 Pod。但是，如果我们想一次替换集群中的所有节点怎么办？</p>
 <p>如果直接 drain 所有节点，则可能会导致停机，因为 Service 负载均衡器可能最终没有可用的 Pod。更糟糕的是，对于有状态的系统，我们可能会耗尽选举数量，从而随着新 Pod 的出现而导致停机时间延长，并且必须经过 leader 选举，以等待一定数量的节点重新出现。</p>
 <p>如果改为一次 drain 一个节点，那么最终可能会在其余的旧节点上启动新的 Pod。这种情况也存在风险，我们可能遇到所有的 Pod 被调度到同一个旧的节点，并且当我们 drain 该节点时，我们还是会失去所有的 Pod 副本。</p>
-<p>为了处理这种情况，Kubernetes 提供了一个称为 <code>PodDisruptionBudgets</code> 的功能，该功能指定了在任何给定的时间点可以关闭的 Pod 数量的阈值。在<a href="https://www.ipyker.com/post/2020-02-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">本系列的下一个也是最后一部分</a>，我们将介绍如何使用它来控制同时发生的 drain 事件的数量，尽管我们采用了原始的方式为所有节点发出了 drain 调用请求。</p>
+<p>为了处理这种情况，Kubernetes 提供了一个称为 <code>PodDisruptionBudgets</code> 的功能，该功能指定了在任何给定的时间点可以关闭的 Pod 数量的阈值。在<a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">本系列的下一个也是最后一部分</a>，我们将介绍如何使用它来控制同时发生的 drain 事件的数量，尽管我们采用了原始的方式为所有节点发出了 drain 调用请求。</p>
 <h1 id="备注">备注</h1>
 <ul>
 <li>原文：<a href="https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304">https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304</a></li>
