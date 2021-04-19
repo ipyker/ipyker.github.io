@@ -299,7 +299,7 @@
 <p>总而言之，由于 <code>preStop</code> 钩子中有足够的延迟和优雅终止，我们现在可以在单个节点上正常关闭 Pod。利用 <code>Deployment</code> 资源，我们可以自动重新创建关闭的 Pod。但是，如果我们想一次替换集群中的所有节点怎么办？</p>
 <p>如果直接 drain 所有节点，则可能会导致停机，因为 Service 负载均衡器可能最终没有可用的 Pod。更糟糕的是，对于有状态的系统，我们可能会耗尽选举数量，从而随着新 Pod 的出现而导致停机时间延长，并且必须经过 leader 选举，以等待一定数量的节点重新出现。</p>
 <p>如果改为一次 drain 一个节点，那么最终可能会在其余的旧节点上启动新的 Pod。这种情况也存在风险，我们可能遇到所有的 Pod 被调度到同一个旧的节点，并且当我们 drain 该节点时，我们还是会失去所有的 Pod 副本。</p>
-<p>为了处理这种情况，Kubernetes 提供了一个称为 <code>PodDisruptionBudgets</code> 的功能，该功能指定了在任何给定的时间点可以关闭的 Pod 数量的阈值。在<a href="https://www.ipyker.com/post/2020-2-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">本系列的下一个也是最后一部分</a>，我们将介绍如何使用它来控制同时发生的 drain 事件的数量，尽管我们采用了原始的方式为所有节点发出了 drain 调用请求。</p>
+<p>为了处理这种情况，Kubernetes 提供了一个称为 <code>PodDisruptionBudgets</code> 的功能，该功能指定了在任何给定的时间点可以关闭的 Pod 数量的阈值。在<a href="https://www.ipyker.com/post/2020-02-16-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">本系列的下一个也是最后一部分</a>，我们将介绍如何使用它来控制同时发生的 drain 事件的数量，尽管我们采用了原始的方式为所有节点发出了 drain 调用请求。</p>
 <h1 id="备注">备注</h1>
 <ul>
 <li>原文：<a href="https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304">https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304</a></li>
