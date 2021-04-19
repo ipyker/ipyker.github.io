@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tips on Embraces Cloud Native</title>
+    <title>Tips on 云原生与运维</title>
     <link>https://www.ipyker.com/categories/tips/</link>
-    <description>Recent content in Tips on Embraces Cloud Native</description>
+    <description>Recent content in Tips on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Thu, 24 May 2018 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/tips/index.xml" rel="self" type="application/rss+xml" />
