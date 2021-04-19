@@ -15,9 +15,9 @@
     
 
     
-    <meta name="title" content="" />
-    <meta property="og:title" content="" />
-    <meta property="twitter:title" content="" />
+    <meta name="title" content="Kubernetes集群升级etcd故障处理" />
+    <meta property="og:title" content="Kubernetes集群升级etcd故障处理" />
+    <meta property="twitter:title" content="Kubernetes集群升级etcd故障处理" />
     
 
     
@@ -34,9 +34,9 @@
     <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
     <link rel="shortcut icon" href="/img/favicon.ico">
 
-    <title>Pyker | Pyker Blog</title>
+    <title>Kubernetes集群升级etcd故障处理-Pyker | Pyker Blog</title>
 
-    <link rel="canonical" href="/search/placeholder/">
+    <link rel="canonical" href="/post/2021-04-19-k8s_node_upgrade/">
 
     <link rel="stylesheet" href="/css/iDisqus.min.css"/>
 
@@ -157,7 +157,7 @@
 
 <style type="text/css">
     header.intro-header {
-        background-image: url('/img/post-bg-coffee.jpeg')
+        background-image: url('/img/etcd-horizontal-color.png')
     }
 </style>
 <header class="intro-header">
@@ -167,16 +167,24 @@
                 <div class="post-heading">
                     <div class="tags">
                         
+                        <a class="tag" href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/etcd" title="etcd">
+                            etcd
+                        </a>
+                        
                     </div>
-                    <h1></h1>
+                    <h1>Kubernetes集群升级etcd故障处理</h1>
                     <h2 class="subheading"></h2>
                     <span class="meta">
                         Posted by 
                         
-                                云原生与运维
+                                 &#34;Pyker&#34;
                          
                         on 
-                        Monday, January 1, 0001
+                        Saturday, September 28, 2019
                         
                         
                         
@@ -204,9 +212,85 @@
                 <header>
                     <h2>TOC</h2>
                 </header>
-                <nav id="TableOfContents"></nav>
+                <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#1-升级">1. 升级</a></li>
+        <li><a href="#2-扩容">2. 扩容</a></li>
+        <li><a href="#3-节点重新加入">3. 节点重新加入</a></li>
+        <li><a href="#4-分析问题所在及解决方案">4. 分析问题所在及解决方案</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
                 
-                
+                <h2 id="1-升级">1. 升级</h2>
+<p>将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ yum install -y <span style="color:#8be9fd;font-style:italic">kubeadm</span><span style="color:#ff79c6">=</span>1.18.3 <span style="color:#8be9fd;font-style:italic">kubectl</span><span style="color:#ff79c6">=</span>1.18.3 <span style="color:#8be9fd;font-style:italic">kubelet</span><span style="color:#ff79c6">=</span>1.18.3
+$ kubeadm config images list <span style="color:#6272a4"># 列出新版本需要的镜像，然后先拉取</span>
+$ kubeadm upgrade apply v1.18.3
+</code></pre></div><h2 id="2-扩容">2. 扩容</h2>
+<p>在当前的集群中新增节点：</p>
+<h3 id="21-重新创建certificate-key和token">2.1. 重新创建certificate key和token</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo kubeadm init phase upload-certs --upload-certs
+
+<span style="color:#6272a4">### Got:</span>
+<span style="color:#6272a4"># [upload-certs] Using certificate key:</span>
+<span style="color:#6272a4"># 2ffe5bbf7d2e670d5bcfb03dac194e2f21eb9715f2099c5f8574e4ba7679ff78</span>
+
+<span style="color:#6272a4"># Add certificate-key for Multi Master Node.</span>
+$ kubeadm token create --print-join-command --certificate-key 2ffe5bbf7d2e670d5bcfb03dac194e2f21eb9715f2099c5f8574e4ba7679ff78
+</code></pre></div><h3 id="22-增加worker节点">2.2. 增加Worker节点：</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubeadm join 192.168.199.173:6443 --token rlxvkn.2ine1loolri50tzt 
+    --discovery-token-ca-cert-hash sha256:86e68de8febb844ab8f015f6af4526d78a980d9cdcf7863eebb05b17c24b9383
+</code></pre></div><h3 id="23-增加master节点">2.3. 增加master节点：</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubeadm join 192.168.199.173:6443 --token rlxvkn.2ine1loolri50tzt 
+    --discovery-token-ca-cert-hash sha256:86e68de8febb844ab8f015f6af4526d78a980d9cdcf7863eebb05b17c24b9383 
+    --control-plane --certificate-key 440a880086e7e9cbbcebbd7924e6a9562d77ee8de7e0ec63511436f2467f7dde
+</code></pre></div><h2 id="3-节点重新加入">3. 节点重新加入</h2>
+<p>如果因为维护等操作，将节点踢出了k8s集群的话，再重新加入执行上面扩容步骤即可。但是如果你维护的节点是etcd节点的话。那么在重新加入前必须做以下操作，不然执行<code>kubeadm join xxx</code>会卡在<code>[check-etcd] Checking that the etcd cluster is healthy</code></p>
+<p>下面开始：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 查看是etcd 节点的master信息</span>
+$ kubectl describe configmaps kubeadm-config -n kube-system
+</code></pre></div><p>可也看到 剔除出去的 节点信息还存在与 <code>kubeadm</code> 配置中，说明 <code>etcd</code> 中还存储着该节点相关信息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 进入任意一个etcd pod，通过 kubectl 工具进入 pod 内部</span>
+$ kubectl get pods -n kube-system | grep etcd
+$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> -it etcd-k8s-master-2 -n kube-system -- sh
+</code></pre></div><p>进入容器后，按下面步执行</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4">#</span>
+$ <span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">ETCDCTL_API</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">3</span>
+$ <span style="color:#8be9fd;font-style:italic">alias</span> <span style="color:#8be9fd;font-style:italic">etcdctl</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key&#39;</span>
+<span style="color:#6272a4">## 查看 etcd 集群成员列表</span>
+$ etcdctl member list
+
+63bfe05c4646fb08, started, k8s-master-2-11, https://192.168.2.11:2380, https://192.168.2.11:2379, <span style="color:#8be9fd;font-style:italic">false</span>
+8e41efd8164c6e3d, started, k8s-master-2-12, https://192.168.2.12:2380, https://192.168.2.12:2379, <span style="color:#8be9fd;font-style:italic">false</span>
+a61d0bd53c1cbcb6, started, k8s-master-2-13, https://192.168.2.13:2380, https://192.168.2.13:2379, <span style="color:#8be9fd;font-style:italic">false</span>
+
+<span style="color:#6272a4">## 删除 etcd 集群成员 k8s-master-2-11</span>
+$ etcdctl member remove 63bfe05c4646fb08
+
+Member 63bfe05c4646fb08 removed from cluster ed984b9o8w35cap2
+
+<span style="color:#6272a4">## 再次查看 etcd 集群成员列表</span>
+$ etcdctl member list
+
+8e41efd8164c6e3d, started, k8s-master-2-12, https://192.168.2.12:2380, https://192.168.2.12:2379, <span style="color:#8be9fd;font-style:italic">false</span>
+a61d0bd53c1cbcb6, started, k8s-master-2-13, https://192.168.2.13:2380, https://192.168.2.13:2379, <span style="color:#8be9fd;font-style:italic">false</span>
+
+<span style="color:#6272a4">## 退出容器</span>
+$ <span style="color:#8be9fd;font-style:italic">exit</span>
+</code></pre></div><p>然后尝试加入 kubernetes 集群：</p>
+<blockquote>
+<p>如果你之前kubeadm  init操作失败了，记得执行<code>kubeadm reset</code>。</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubeadm join 192.168.199.173:6443 --token rlxvkn.2ine1loolri50tzt 
+    --discovery-token-ca-cert-hash sha256:86e68de8febb844ab8f015f6af4526d78a980d9cdcf7863eebb05b17c24b9383 
+    --control-plane --certificate-key 440a880086e7e9cbbcebbd7924e6a9562d77ee8de7e0ec63511436f2467f7dde
+</code></pre></div><h2 id="4-分析问题所在及解决方案">4. 分析问题所在及解决方案</h2>
+<p>因为集群是通过 <code>kubeadm</code> 工具搭建的，且使用了 <code>etcd</code> 镜像方式与 <code>master</code> 节点一起，所以每个 <code>Master</code> 节点上都会存在一个 <code>etcd</code> 容器实例。当剔除一个 <code>master</code> 节点时 <code>etcd</code> 集群未删除剔除的节点的 <code>etcd</code> 成员信息，该信息还存在 <code>etcd</code> 集群列表中。</p>
+
 
                 
                 

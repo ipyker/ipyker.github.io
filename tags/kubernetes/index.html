@@ -15,9 +15,9 @@
     
 
     
-    <meta name="title" content="Kubernetes" />
-    <meta property="og:title" content="Kubernetes" />
-    <meta property="twitter:title" content="Kubernetes" />
+    <meta name="title" content="kubernetes" />
+    <meta property="og:title" content="kubernetes" />
+    <meta property="twitter:title" content="kubernetes" />
     
 
     
@@ -34,7 +34,7 @@
     <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
     <link rel="shortcut icon" href="/img/favicon.ico">
 
-    <title>Kubernetes-Pyker | Pyker Blog</title>
+    <title>kubernetes-Pyker | Pyker Blog</title>
 
     <link rel="canonical" href="/tags/kubernetes/">
 
@@ -96,15 +96,11 @@
                     
                         
                         <li>
-                            <a href="/categories/life">life</a>
+                            <a href="/categories/owner">owner</a>
                         </li>
                         
                         <li>
                             <a href="/categories/tech">tech</a>
-                        </li>
-                        
-                        <li>
-                            <a href="/categories/tips">tips</a>
                         </li>
                         
                     
@@ -189,69 +185,19 @@
             
 
 <div class="post-preview">
-    <a href="https://www.ipyker.com/2018/05/23/istio-auto-injection-with-webhook/">
+    <a href="https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/">
         <h2 class="post-title">
-            Istio Sidecar自动注入原理
-        </h2>
-	
-        <h3 class="post-subtitle">
-            Kubernetes webhook扩展机制解析
-        </h3>
-	
-        <div class="post-content-preview">
-	
-            Kubernets 1.9版本引入了Admission Webhook(web 回调)扩展机制，通过Webhook,开发者可以非常灵活地对Kubernets API Server的功能进行扩展，在API Server创建资源时对资源进行验证或者修改。 Istio 0.7版本就利用了Kubernets webhook实现了sidecar的自动注入。
-        
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by     &#34;赵化冰&#34; Wednesday, May 23, 2018
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/2018/04/16/using-helm-to-deploy-to-kubernetes/">
-        <h2 class="post-title">
-            Helm介绍
-        </h2>
-	
-        <h3 class="post-subtitle">
-            强大的Kubernetes包管理工具
-        </h3>
-	
-        <div class="post-content-preview">
-	
-            Helm是Kubernetes生态系统中的一个软件包管理工具。本文将介绍为何要使用Helm进行Kubernetes软件包管理，澄清Helm中使用到的相关概念，并通过一个具体的示例学习如何使用Helm打包，分发，安装，升级及回退Kubernetes应用。
-        
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by 赵化冰 Monday, April 16, 2018
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/2017/11/28/access-application-from-outside/">
-        <h2 class="post-title">
-            如何从外部访问Kubernetes集群中的应用？
+            Kubernetes集群升级etcd故障处理
         </h2>
 	
         <div class="post-content-preview">
 	
-            我们知道，kubernetes的Cluster Network属于私有网络，只能在cluster Network内部才能访问部署的应用，那如何才能将Kubernetes集群中的应用暴露到外部网络，为外部用户提供服务呢？本文探讨了从外部网络访问kubernetes cluster中应用的几种实现方式。
-        
+            1. 升级 将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。 $ yum install -y kubeadm=1.18.3 kubectl=1.18.3 kubelet=1.18.3 $ kubeadm config images list
+       
         </div>
     </a>
     <p class="post-meta">
-    Posted by 赵化冰 Tuesday, November 28, 2017
+    Posted by      &#34;Pyker&#34; Saturday, September 28, 2019
     
     
     </p>
@@ -285,56 +231,6 @@
                
             
                
-                    <a href="/tags/docker" title="docker">
-                        docker
-                    </a>
-               
-            
-               
-            
-               
-                    <a href="/tags/istio" title="istio">
-                        istio
-                    </a>
-               
-            
-               
-                    <a href="/tags/kubernetes" title="kubernetes">
-                        kubernetes
-                    </a>
-               
-            
-               
-                    <a href="/tags/microservice" title="microservice">
-                        microservice
-                    </a>
-               
-            
-               
-            
-               
-                    <a href="/tags/security" title="security">
-                        security
-                    </a>
-               
-            
-               
-                    <a href="/tags/service-mesh" title="service-mesh">
-                        service-mesh
-                    </a>
-               
-            
-               
-                    <a href="/tags/tips" title="tips">
-                        tips
-                    </a>
-               
-            
-               
-            
-               
-            
-               
             
         </div>
     </section>
@@ -351,7 +247,7 @@
             </a>
             
             
-                <p>Software Developer, Open Source Enthusiast and Life Adventurer</p>
+                <p>资深运维，热爱云原生，开源爱好者，欢迎来探讨技术！</p>
             
            
            <ul class="list-inline">
