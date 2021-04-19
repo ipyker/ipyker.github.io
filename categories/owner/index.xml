@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tops on 云原生与运维</title>
-    <link>https://www.ipyker.com/top/</link>
-    <description>Recent content in Tops on 云原生与运维</description>
+    <title>owner on 云原生与运维</title>
+    <link>https://www.ipyker.com/categories/owner/</link>
+    <description>Recent content in owner on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 07 Nov 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/top/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 07 Nov 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/owner/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>About me</title>
       <link>https://www.ipyker.com/top/about/</link>
@@ -14,15 +14,6 @@
       
       <guid>https://www.ipyker.com/top/about/</guid>
       <description>我宁愿犯错，也不愿什么都不做, 不要放弃，直到做对为止, 我再重复一次，时间不站在你那边。</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>https://www.ipyker.com/top/books/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://www.ipyker.com/top/books/</guid>
-      <description>Booking&amp;hellip;. </description>
     </item>
     
   </channel>
