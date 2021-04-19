@@ -295,7 +295,7 @@
 <li>如何从系统中移除 Pod，以及为什么必须在关闭序列中引入延迟。</li>
 <li>如何指定 Pod 中断预算，以确保我们始终有一定数量的 Pod 可用，以便在中断情况下为功能正常的应用程序持续提供服务。</li>
 </ul>
-<p>当所有这些功能一起使用时，我们可以实现零实例更新停机时间的目标！</p>
+<p>当所有这些功能一起使用时，我们可以实现零实例更新停机时间的目标.</p>
 <p>但是不要只听我的话！继续进行此配置。您甚至可以利用 terratest 编写自动化测试，这可以利用 <a href="https://godoc.org/github.com/gruntwork-io/terratest/modules/k8s">k8s 模块</a>中的功能以及<a href="https://godoc.org/github.com/gruntwork-io/terratest/modules/http-helper#ContinuouslyCheckUrl">连续检查 endpoint 的能力</a>。毕竟，<a href="https://blog.gruntwork.io/5-lessons-learned-from-writing-over-300-000-lines-of-infrastructure-code-36ba7fadeac1">我们从编写 30 万行基础结构代码中学到的重要经验</a>之一就是，没有自动化测试的基础结构代码是不完整的。</p>
 <h1 id="备注">备注</h1>
 <ul>
