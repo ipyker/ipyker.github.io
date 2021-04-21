@@ -599,11 +599,17 @@ time_total: 0.391311
 </span><span style="color:#f1fa8c">        reload
 </span><span style="color:#f1fa8c">        loadbalance  # 随机A，AAAA，MX解析的顺序
 </span><span style="color:#f1fa8c">    }</span>    
-</code></pre></div><p><a href="https://coredns.io/plugins/cache/">插件cache</a>的语法为<code>cache [TTL] [ZONES...]</code>，最大TTL，单位为秒。如果未指定，则使用最大TTL, NOERROR响应为3600，不存在响应为1800。
+</code></pre></div><ul>
+<li>
+<p><a href="https://coredns.io/plugins/cache/">插件cache</a>的语法为<code>cache [TTL] [ZONES...]</code>，最大TTL，单位为秒。如果未指定，则使用最大TTL, NOERROR响应为3600，不存在响应为1800。
 例如：设置TTL为300：意思为缓存300将缓存记录长达300秒。ZONES应该缓存的区域。如果为空，则使用配置块中的区域。（一个<code>xxx:53{}</code>块即为一个zone）
 <code>cache {success CAPACITY TTL MINTTL}</code>: 覆盖用于缓存成功响应的设置。 “CAPACITY”表示开始驱逐（随机）之前缓存的最大数据包数。 TTL会覆盖缓存的最大TTL。 MINTTL会覆盖缓存的最小TTL（默认值为5），这对于将查询限制到后端很有用。
-<code>cache {denial CAPACITY TTL MINTTL}</code>: 覆盖用于缓存拒绝存在响应的设置。 “CAPACITY”表示开始驱逐（LRU）之前缓存的最大数据包数。 TTL会覆盖缓存的最大TTL。 MINTTL会覆盖缓存的最小TTL（默认值为5），这对于将查询限制到后端很有用。 第三类（错误），但是这些响应永远不会被缓存。
-<a href="https://coredns.io/plugins/kubernetes/">插件Kubernetes</a> TTL字段允许您为响应设置自定义TTL。 默认值为5秒。 允许的最小TTL为0秒，最大为3600秒。 将TTL设置为0将防止记录被缓存。</p>
+<code>cache {denial CAPACITY TTL MINTTL}</code>: 覆盖用于缓存拒绝存在响应的设置。 “CAPACITY”表示开始驱逐（LRU）之前缓存的最大数据包数。 TTL会覆盖缓存的最大TTL。 MINTTL会覆盖缓存的最小TTL（默认值为5），这对于将查询限制到后端很有用。 第三类（错误），但是这些响应永远不会被缓存。</p>
+</li>
+<li>
+<p><a href="https://coredns.io/plugins/kubernetes/">插件Kubernetes</a> TTL字段允许您为响应设置自定义TTL。 默认值为5秒。 允许的最小TTL为0秒，最大为3600秒。 将TTL设置为0将防止记录被缓存。</p>
+</li>
+</ul>
 
 
                 
