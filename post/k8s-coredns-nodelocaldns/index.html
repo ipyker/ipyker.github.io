@@ -216,6 +216,9 @@
         <li><a href="#部署nodelocaldns">部署NodeLocaldns</a></li>
         <li><a href="#解析search域影响查询响应">解析search域影响查询响应</a></li>
         <li><a href="#为什么ndots5会对应用程序性能产生负面影响">为什么ndots：5会对应用程序性能产生负面影响？</a></li>
+        <li><a href="#single-request-reopen-选项">single-request-reopen 选项</a></li>
+        <li><a href="#timeout-选项">timeout 选项</a></li>
+        <li><a href="#ipv6解析影响服务查询时间">ipv6解析影响服务查询时间</a></li>
         <li><a href="#dns缓存命中和延时">DNS缓存命中和延时</a></li>
       </ul>
     </li>
@@ -523,11 +526,16 @@ options ndots:2
 </code></pre></div><p>deployment的dnsConfig配置:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  <span style="color:#ff79c6">dnsPolicy</span>: None
   <span style="color:#ff79c6">dnsConfig</span>:
+    <span style="color:#ff79c6">nameservers</span>:
+    - <span style="color:#bd93f9">169.254.20.10</span>      <span style="color:#6272a4"># 启用谁也nodelocaldns解析</span>
     <span style="color:#ff79c6">searches</span>:
-    - svc.cluster.local
+    - svc.cluster.local  <span style="color:#6272a4"># 这样设置，要求服务名称调用时，严格svcname.namespace格式</span>
     <span style="color:#ff79c6">options</span>:
     - <span style="color:#ff79c6">name</span>: ndots
       <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
+    - <span style="color:#ff79c6">name</span>: single-request-reopen
+    - <span style="color:#ff79c6">timeout</span>:
+      <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;1&#34;</span>
 </code></pre></div><p>在配置生效后，我们验证：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -s -IL https://www.ipyker.com <span style="color:#ff79c6">&amp;&amp;</span> curl -s -IL helloworld.hw:5000/hello
 HTTP/2 <span style="color:#bd93f9">200</span>
@@ -542,6 +550,13 @@ $ kubectl logs node-local-dns-8x3o5 -n kube-system
 </code></pre></div><p>可以发现不管内外地址，请求一次就命中。</p>
 <h2 id="为什么ndots5会对应用程序性能产生负面影响">为什么ndots：5会对应用程序性能产生负面影响？</h2>
 <p>如果您的应用程序进行了大量外部流量，则对于已建立的每个TCP连接（或更具体而言，对于每个已解析的名称），它将在正确解析名称之前发出5个DNS查询，因为它将通过4个DNS查询。 首先是本地搜索域，最后将发布绝对名称解析查询。</p>
+<h2 id="single-request-reopen-选项">single-request-reopen 选项</h2>
+<p>since glibc 2.9中有说明：在_res.options中设置RES_SNGLKUPREOP。 <code>解析程序对A和AAAA请求使用相同的套接字</code>。 某些硬件错误地仅发送回一个答复。 发生这种情况时，客户端系统将等待第二次答复。 启用此选项将更改此行为，以便如果未正确处理来自同一端口的两个请求，它将在发送第二个请求之前关闭套接字并打开一个新请求。</p>
+<h2 id="timeout-选项">timeout 选项</h2>
+<p>一般<code>/etc/resolv.conf</code> 还有两个默认的值至关重要，一个是超时的 timeout，一个是重试的 attempts，默认情况下，前者是 5s 后者是 2 次。理解该两个字段：每个 nameserver 等待 timeout 的时间，如果存在多个namespace都没结果，resolver 会重复上面的步骤 (attempts – 1) 次。设置的目的是加快nodelocaldns不能处理的解析快速转发到coredns。</p>
+<h2 id="ipv6解析影响服务查询时间">ipv6解析影响服务查询时间</h2>
+<p>通过上面的记录，可以发现每一次请求都会有AAAA解析，即ipv6,我们可以根据自己业务性质是否有使用到ipv6特性来关闭该查询。如果<code>K8S集群宿主机没有关闭IPV6内核模块</code>的话，容器请求coredns时的默认行为是同时发起IPV4和IPV6解析。
+此处暂时不涉及主机层面禁用ipv6的步骤。</p>
 <h2 id="dns缓存命中和延时">DNS缓存命中和延时</h2>
 <p>首先，我们环境当前存在部分延迟，所以本次直接演示：</p>
 <ul>
