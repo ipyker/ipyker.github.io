@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="使用NFS做Kunernetes的StorageClass对象" />
+    <meta property="og:title" content="使用NFS做Kunernetes的StorageClass对象" />
+    <meta property="twitter:title" content="使用NFS做Kunernetes的StorageClass对象" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>使用NFS做Kunernetes的StorageClass对象-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/k8s-sc-nfs/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic1.win4000.com%2Fwallpaper%2F6%2F58cf375f2af76.jpg&refer=http%3A%2F%2Fpic1.win4000.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621617187&t=1211d4ffcfba978d3df9bf413a8b7576')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/nfs" title="nfs">
+                            nfs
+                        </a>
+                        
+                    </div>
+                    <h1>使用NFS做Kunernetes的StorageClass对象</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Thursday, January 16, 2020
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#pv和pvc简介">PV和PVC简介</a></li>
+    <li><a href="#storageclass">StorageClass</a></li>
+    <li><a href="#环境说明">环境说明</a></li>
+    <li><a href="#安装nfs">安装NFS</a></li>
+    <li><a href="#nfs内核性能优化">NFS内核性能优化</a></li>
+    <li><a href="#创建storageclass-rbac">创建StorageClass RBAC</a></li>
+    <li><a href="#配置deployment文件">配置deployment文件</a></li>
+    <li><a href="#创建storageclass">创建StorageClass</a></li>
+    <li><a href="#测试pvc动态创建pv">测试PVC动态创建PV</a></li>
+    <li><a href="#创建statefulset实例演示">创建StatefulSet实例演示</a></li>
+    <li><a href="#验证数据存储">验证数据存储</a></li>
+  </ul>
+</nav>
+                
+                <h1 id="pv和pvc简介">PV和PVC简介</h1>
+<p><code>PersistentVolume（PV）</code>是指由集群管理员配置提供的某存储系统上的段存储空间，它是对底层共享存储的抽象，将共享存储作为种可由用户申请使的资源，实现了“存储消费”机制。通过存储插件机制，PV支持使用多种网络存储系统或云端存储等多种后端存储系统。 PV是集群级别的资源，不属于任何名称空间，用户对PV资源的使需要通过<code>PersistentVolumeClaim（PVC）</code>提出的使申请（或称为声明）来完成绑定，PVC是PV资源的消费者，它向PV申请特定大小的空间及访问模式（如rw或ro）。 从创建出PVC存储卷请求后再由Pod资源通过PVC持久卷请求来关联PV存储卷使用。</p>
+<h1 id="storageclass">StorageClass</h1>
+<p>通俗的讲它就是将存储资源定义为具有显著特性的类（Class）而不是具体的PV，用户通过PVC直接向意向的存储类发出申请，然后由其按需为用户<code>动态创建PV</code>（也可以由管理员事先创建的PV），这样做甚至免去了需要先创建PV的过程。 PV对存储系统的支持可通过其插件来实现，目前，Kubernetes支持如下类型的插件。<a href="https://kubernetes.io/docs/concepts/storage/storage-classes/">官方地址</a>， 而这里我们使用NFS来搭建StorageClass。</p>
+<h1 id="环境说明">环境说明</h1>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th>IP</th>
+<th>应用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>centos7.5</td>
+<td>192.168.3.125</td>
+<td>nfs服务器</td>
+</tr>
+<tr>
+<td>centos7.5</td>
+<td>192.168.3.120</td>
+<td>k8s集群master1</td>
+</tr>
+<tr>
+<td>centos7.5</td>
+<td>192.168.3.121</td>
+<td>k8s集群master2</td>
+</tr>
+<tr>
+<td>centos7.5</td>
+<td>192.168.3.122</td>
+<td>k8s集群master3</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>我们这里k8s集群没有node节点，master节点的不被调度的污点(Taints) 被删掉了。<code>kubectl edit node master1</code></p>
+</blockquote>
+<h1 id="安装nfs">安装NFS</h1>
+<p>首先我们得有个NFS服务器，不然就不存在使用NFS服务来做存储类这一说法。</p>
+<ul>
+<li>安装软件包</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ yum -y install nfs-utils  rpcbind
+</code></pre></div><blockquote>
+<p><code>nfs-utils</code>软件包请在所有k8s集群上安装，因为StorageClass需要挂载NFS共享目录。</p>
+</blockquote>
+<ul>
+<li>配置共享目录</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 这里使用/data/nfs作为共享目录</span>
+$ cat &gt;&gt; /etc/exports <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">/data/nfs  *(rw,no_root_squash)
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><ul>
+<li>启动NFS服务</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ systemctl start rpcbind
+$ systemctl start nfs
+</code></pre></div><ul>
+<li>测试NFS是否可用</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 在同网络任意一台装了nfs-utils软件包服务器上测试挂载</span>
+$ mount -t nfs 192.168.3.125:/data/nfs /mnt
+</code></pre></div><p>如果一切正常，说明NFS服务正常！此时才能进行后面的操作！</p>
+<h1 id="nfs内核性能优化">NFS内核性能优化</h1>
+<p>Linux nfs客户端对于同时发起的NFS请求数量进行了控制，若该参数配置较小会导致IO性能较差，请查看该参数：<code>cat /proc/sys/sunrpc/tcp_slot_table_entries</code>
+默认编译的内核该参数最大值为256，可适当提高该参数的值来取得较好的性能，请以root身份执行以下命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;options sunrpc tcp_slot_table_entries=128&#34;</span> &gt;&gt; /etc/modprobe.d/sunrpc.conf
+$ <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;options sunrpc tcp_max_slot_table_entries=128&#34;</span> &gt;&gt;  /etc/modprobe.d/sunrpc.conf
+$ sysctl -w sunrpc.tcp_slot_table_entries<span style="color:#ff79c6">=</span><span style="color:#bd93f9">128</span>
+</code></pre></div><h1 id="创建storageclass-rbac">创建StorageClass RBAC</h1>
+<p>我这里是使用了nfs的名称空间，也可以使用别的或者删掉，使用默认的名称空间。如果要使用名称空间需要先创建。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create ns nfs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-provisioner
+  namespace: nfs
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: nfs-provisioner-runner
+rules:
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;persistentvolumes&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>, <span style="color:#f1fa8c">&#34;create&#34;</span>, <span style="color:#f1fa8c">&#34;delete&#34;</span><span style="color:#ff79c6">]</span>
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;persistentvolumeclaims&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>, <span style="color:#f1fa8c">&#34;update&#34;</span><span style="color:#ff79c6">]</span>
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;storage.k8s.io&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;storageclasses&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span><span style="color:#ff79c6">]</span>
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;events&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;create&#34;</span>, <span style="color:#f1fa8c">&#34;update&#34;</span>, <span style="color:#f1fa8c">&#34;patch&#34;</span><span style="color:#ff79c6">]</span>
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;services&#34;</span>, <span style="color:#f1fa8c">&#34;endpoints&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;get&#34;</span><span style="color:#ff79c6">]</span>
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;extensions&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;podsecuritypolicies&#34;</span><span style="color:#ff79c6">]</span>
+    resourceNames: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;nfs-provisioner&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;use&#34;</span><span style="color:#ff79c6">]</span>
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: run-nfs-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: nfs-provisioner
+     <span style="color:#6272a4"># replace with namespace where provisioner is deployed</span>
+    namespace: nfs
+roleRef:
+  kind: ClusterRole
+  name: nfs-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: leader-locking-nfs-provisioner
+  namespace: nfs
+rules:
+  - apiGroups: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;&#34;</span><span style="color:#ff79c6">]</span>
+    resources: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;endpoints&#34;</span><span style="color:#ff79c6">]</span>
+    verbs: <span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;list&#34;</span>, <span style="color:#f1fa8c">&#34;watch&#34;</span>, <span style="color:#f1fa8c">&#34;create&#34;</span>, <span style="color:#f1fa8c">&#34;update&#34;</span>, <span style="color:#f1fa8c">&#34;patch&#34;</span><span style="color:#ff79c6">]</span>
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: leader-locking-nfs-provisioner
+  namespace: nfs
+subjects:
+  - kind: ServiceAccount
+    name: nfs-provisioner
+    <span style="color:#6272a4"># replace with namespace where provisioner is deployed</span>
+    namespace: nfs
+roleRef:
+  kind: Role
+  name: leader-locking-nfs-provisioner
+  apiGroup: rbac.authorization.k8s.io
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f rbac.yaml  <span style="color:#6272a4"># 应用rbac.yaml</span>
+serviceaccount/nfs-provisioner created
+clusterrole.rbac.authorization.k8s.io/nfs-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/run-nfs-provisioner created
+role.rbac.authorization.k8s.io/leader-locking-nfs-provisioner created
+rolebinding.rbac.authorization.k8s.io/leader-locking-nfs-provisioner created
+</code></pre></div><h1 id="配置deployment文件">配置deployment文件</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat deployment.yaml 
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-provisioner
+  namespace: nfs
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  selector:
+    matchLabels:
+      app: nfs-provisioner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-provisioner
+    spec:
+      serviceAccount: nfs-provisioner
+      containers:
+        - name: nfs-provisioner
+          image: registry.cn-shenzhen.aliyuncs.com/pyker/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: example.com/nfs
+            - name: NFS_SERVER
+              value: 192.168.3.125  <span style="color:#6272a4"># NFS服务器地址</span>
+            - name: NFS_PATH 
+              value: /data/nfs/sc   <span style="color:#6272a4"># 需要挂载的路径目录</span>
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.3.125   <span style="color:#6272a4"># NFS服务器地址</span>
+            path: /data/nfs/sc      <span style="color:#6272a4"># 需要挂载的路径目录</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f deployment.yaml <span style="color:#6272a4"># 应用deployment.yaml</span>
+deployment.apps/nfs-provisioner created
+</code></pre></div><h1 id="创建storageclass">创建StorageClass</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: nfs
+  annotations:
+    storageclass.kubernetes.io/is-default-class: <span style="color:#f1fa8c">&#34;true&#34;</span>  
+provisioner: example.com/nfs
+<span style="color:#6272a4">#mountOptions:</span>
+<span style="color:#6272a4">#  - vers=4.1</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f storageclass.yaml  <span style="color:#6272a4"># 应用storageclass.yaml</span>
+storageclass.storage.k8s.io/nfs created
+</code></pre></div><p>以上创建完成后，可以查看我们刚才新创建的资源信息如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl  get deploy  -n nfs
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+nfs-provisioner   1/1     <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           67m  <span style="color:#6272a4"># READY为1/1正常</span>
+
+$ kubectl  get sc -n nfs
+NAME   PROVISIONER       AGE
+nfs    example.com/nfs   66m
+</code></pre></div><p>确认服务正常后，我们可以进行来先进行测试一下NFS的动态存储功能是否正常。</p>
+<h1 id="测试pvc动态创建pv">测试PVC动态创建PV</h1>
+<p>手动编写一个PVC来测试一下，<strong>注意：storageClassName应确保与上面创建的StorageClass名称一致。</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat test-claim.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-claim1
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: nfs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f test-claim.yaml 
+persistentvolumeclaim/test-claim1 created
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pvc
+NAME                     STATUS        VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+test-claim1              Bound         pvc-d0a0a29b-ab06-11e9-96e4-080027f62143   1Mi        RWX            nfs            9s
+
+$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS        CLAIM                            STORAGECLASS   REASON   AGE
+pvc-d0a0a29b-ab06-11e9-96e4-080027f62143   1Mi        RWX            Delete           Bound         default/test-claim1              nfs                     21s
+</code></pre></div><p>从上面可以看到PVC已经成功的动态的创建了一个PV存储卷并且与之绑定，此时我们到NFS服务器上去看一下，也可以发现已经自动生成了一个存储类的文件夹。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ls /data/nfs/sc/
+default-test-claim1-pvc-d0a0a29b-ab06-11e9-96e4-080027f62143
+</code></pre></div><h1 id="创建statefulset实例演示">创建StatefulSet实例演示</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat sts.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-access
+  labels:
+    app: nginx
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: <span style="color:#bd93f9">80</span>
+      targetPort: web
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx-web
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  serviceName: <span style="color:#f1fa8c">&#34;nginx&#34;</span>
+  replicas: <span style="color:#bd93f9">3</span>
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      terminationGracePeriodSeconds: <span style="color:#bd93f9">10</span>
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: <span style="color:#bd93f9">80</span>
+          name: web
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: nginx-data
+    spec:
+      accessModes: <span style="color:#ff79c6">[</span> <span style="color:#f1fa8c">&#34;ReadWriteOnce&#34;</span> <span style="color:#ff79c6">]</span>
+      storageClassName: <span style="color:#f1fa8c">&#34;nfs&#34;</span>
+      resources:
+        requests:
+          storage: 1Gi
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl apply -f sts.yaml
+service/nginx created
+statefulset.apps/nginx-web created
+</code></pre></div><p>查看3个有状态的nginx是否启动, 也可以发现已经启动完成。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl  get pod,sts
+NAME          READY   STATUS        RESTARTS   AGE
+nginx-web-0   1/1     Running       <span style="color:#bd93f9">0</span>          70m
+nginx-web-1   1/1     Running       <span style="color:#bd93f9">0</span>          70m
+nginx-web-2   1/1     Running       <span style="color:#bd93f9">0</span>          68m
+
+NAME                         READY   AGE
+statefulset.apps/nginx-web   3/3     71m
+</code></pre></div><p>然后我们在查看一下PVC和PV的创建状态</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl  get pvc,pv
+NAME                                           STATUS        VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+persistentvolumeclaim/nginx-data-nginx-web-0   Bound         pvc-2c8ec903-ab08-11e9-96e4-080027f62143   1Gi        RWO            nfs            71m
+persistentvolumeclaim/nginx-data-nginx-web-1   Bound         pvc-34ce5093-ab08-11e9-96e4-080027f62143   1Gi        RWO            nfs            71m
+persistentvolumeclaim/nginx-data-nginx-web-2   Bound         pvc-6e4464ea-ab08-11e9-96e4-080027f62143   1Gi        RWO            nfs            70m
+persistentvolumeclaim/test-claim1              Bound         pvc-d0a0a29b-ab06-11e9-96e4-080027f62143   1Mi        RWX            nfs            81m
+
+NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS        CLAIM                            STORAGECLASS   REASON   AGE
+persistentvolume/pvc-2c8ec903-ab08-11e9-96e4-080027f62143   1Gi        RWO            Delete           Bound         default/nginx-data-nginx-web-0   nfs                     71m
+persistentvolume/pvc-34ce5093-ab08-11e9-96e4-080027f62143   1Gi        RWO            Delete           Bound         default/nginx-data-nginx-web-1   nfs                     71m
+persistentvolume/pvc-6e4464ea-ab08-11e9-96e4-080027f62143   1Gi        RWO            Delete           Bound         default/nginx-data-nginx-web-2   nfs                     70m
+persistentvolume/pvc-d0a0a29b-ab06-11e9-96e4-080027f62143   1Mi        RWX            Delete           Bound         default/test-claim1              nfs                     81m
+</code></pre></div><p>由于statefulset是有状态的，所以他会为每个pod独立分配PVC,PV，且该PV只能该POD使用，所以3个副本pod会生成3个PVC和PV。</p>
+<h1 id="验证数据存储">验证数据存储</h1>
+<p>上面我们已经搭建好了nfs类型的StorageClass了，也成功启动了。现在我们来测试一下数据是否可以存储到NFS。我们进入刚刚创建的nginx-web-0容器进行操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl  <span style="color:#8be9fd;font-style:italic">exec</span> -it nginx-web-0 -- bash
+root@nginx-web-0:/# <span style="color:#8be9fd;font-style:italic">cd</span> /usr/share/nginx/html/
+root@nginx-web-0:/# cat &gt;&gt; index.html <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">&gt; hello this is my new pages!
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>然后我们到NFS服务器的/data/nfs/sc目录上查看有关nginx-web-0目录的存储目录内容。 也可以发现我们刚才在容器里新建index.html的操作确实存放在NFS上了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cat /data/nfs/sc/default-nginx-data-nginx-web-0-pvc-2c8ec903-ab08-11e9-96e4-080027f62143/index.html 
+hello this is my new pages!
+</code></pre></div>
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/linux-makefile/" data-toggle="tooltip" data-placement="top" title="Shell中的makefile使用">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/post/php-image-docker/" data-toggle="tooltip" data-placement="top" title="php-fpm镜像快速安装模块">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>

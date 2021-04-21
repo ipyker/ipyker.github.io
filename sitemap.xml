@@ -53,8 +53,63 @@
   </url>
   
   <url>
+    <loc>https://www.ipyker.com/tags/ceph/</loc>
+    <lastmod>2020-11-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.ipyker.com/post/ceph-deploy/</loc>
     <lastmod>2020-11-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/%E5%AD%98%E5%82%A8/</loc>
+    <lastmod>2020-11-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/k8s-redis-cluster/</loc>
+    <lastmod>2020-08-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/docker/</loc>
+    <lastmod>2020-03-20T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/php-fpm/</loc>
+    <lastmod>2020-03-20T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/php-image-docker/</loc>
+    <lastmod>2020-03-20T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/nfs/</loc>
+    <lastmod>2020-01-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/k8s-sc-nfs/</loc>
+    <lastmod>2020-01-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/linux/</loc>
+    <lastmod>2019-12-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/tags/makefile/</loc>
+    <lastmod>2019-12-16T14:02:14+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ipyker.com/post/linux-makefile/</loc>
+    <lastmod>2019-12-16T14:02:14+00:00</lastmod>
   </url>
   
   <url>

@@ -249,19 +249,19 @@
 <hr>
 
 <div class="post-preview">
-    <a href="https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/">
+    <a href="https://www.ipyker.com/post/k8s-redis-cluster/">
         <h2 class="post-title">
-            Kubernetes集群升级etcd故障处理
+            Kubernetes 部署高可用Redis Cluster
         </h2>
 	
         <div class="post-content-preview">
 	
-            1. 升级 将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。 $ yum install -y kubeadm=1.18.3 kubectl=1.18.3 kubelet=1.18.3 $ kubeadm config images list
+            部署方式 Statefulset Service &amp; depolyment 对于redis,mysql这种有状态的服务,我们使用statefulset方式为首选.我们这边主要就是介绍statefuls
        
         </div>
     </a>
     <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Saturday, September 28, 2019
+    Posted by      &#34;Pyker&#34; Sunday, August 16, 2020
     
     
     </p>
@@ -270,19 +270,19 @@
 <hr>
 
 <div class="post-preview">
-    <a href="https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/">
+    <a href="https://www.ipyker.com/post/php-image-docker/">
         <h2 class="post-title">
-            Kubernetes安装zookeeper 3.5.5
+            php-fpm镜像快速安装模块
         </h2>
 	
         <div class="post-content-preview">
 	
-            1. 准备zookeeper statefulset文件 $ cat zk-statefulset.yaml apiVersion: apps/v1beta1 kind: StatefulSet metadata: name: zoo spec: serviceName: &#34;zoo&#34; replicas: 3 template: metadata: labels: app: zookeeper spec: terminationGracePeriodSeconds: 10 containers: - name: zookeeper image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5 imagePullPolicy: IfNotPresent readinessProbe: httpGet: path: /commands/ruok port: 8080 initialDelaySeconds: 10 timeoutSeconds: 5 periodSeconds: 3 livenessProbe: httpGet:
+            四个命令： docker-php-ext-configure docker-php-ext-enable docker-php-ext-install docker-php-source 1. docker-php-source 此命令，实际上就是在PHP容器中创建一个/usr/src/php的目录，里面放了一些自带的文件而已。我们就把它当作一个
        
         </div>
     </a>
     <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Tuesday, August 27, 2019
+    Posted by      &#34;Pyker&#34; Friday, March 20, 2020
     
     
     </p>
@@ -327,6 +327,10 @@
                
             
                
+            
+               
+            
+               
                     <a href="/tags/kubernetes" title="kubernetes">
                         kubernetes
                     </a>
@@ -335,9 +339,19 @@
                
             
                
+            
+               
+            
+               
+            
+               
+            
+               
                     <a href="/tags/pod" title="pod">
                         pod
                     </a>
+               
+            
                
             
                

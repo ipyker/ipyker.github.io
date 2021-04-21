@@ -227,6 +227,48 @@
 <hr>
 
 <div class="post-preview">
+    <a href="https://www.ipyker.com/post/k8s-redis-cluster/">
+        <h2 class="post-title">
+            Kubernetes 部署高可用Redis Cluster
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            部署方式 Statefulset Service &amp; depolyment 对于redis,mysql这种有状态的服务,我们使用statefulset方式为首选.我们这边主要就是介绍statefuls
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Sunday, August 16, 2020
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="https://www.ipyker.com/post/k8s-sc-nfs/">
+        <h2 class="post-title">
+            使用NFS做Kunernetes的StorageClass对象
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            PV和PVC简介 PersistentVolume（PV）是指由集群管理员配置提供的某存储系统上的段存储空间，它是对底层共享存储的抽象，将共享
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Thursday, January 16, 2020
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
     <a href="https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/">
         <h2 class="post-title">
             Kubernetes集群升级etcd故障处理
@@ -240,48 +282,6 @@
     </a>
     <p class="post-meta">
     Posted by      &#34;Pyker&#34; Saturday, September 28, 2019
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/">
-        <h2 class="post-title">
-            Kubernetes安装zookeeper 3.5.5
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            1. 准备zookeeper statefulset文件 $ cat zk-statefulset.yaml apiVersion: apps/v1beta1 kind: StatefulSet metadata: name: zoo spec: serviceName: &#34;zoo&#34; replicas: 3 template: metadata: labels: app: zookeeper spec: terminationGracePeriodSeconds: 10 containers: - name: zookeeper image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5 imagePullPolicy: IfNotPresent readinessProbe: httpGet: path: /commands/ruok port: 8080 initialDelaySeconds: 10 timeoutSeconds: 5 periodSeconds: 3 livenessProbe: httpGet:
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Tuesday, August 27, 2019
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-11-01-k8s_error_status/">
-        <h2 class="post-title">
-            Kubernetes常见的Pod 状态
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            通常我们在部署运行pod时，Pod常见以下几种状态，下面记一下： 1. 启动时错误 ImagePullBackoff：无法检索Pod容器的image
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;&#34; Monday, June 4, 2018
     
     
     </p>
@@ -326,6 +326,10 @@
                
             
                
+            
+               
+            
+               
                     <a href="/tags/kubernetes" title="kubernetes">
                         kubernetes
                     </a>
@@ -334,9 +338,19 @@
                
             
                
+            
+               
+            
+               
+            
+               
+            
+               
                     <a href="/tags/pod" title="pod">
                         pod
                     </a>
+               
+            
                
             
                

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>PHP-FPM on 云原生与运维</title>
+    <link>https://www.ipyker.com/tags/php-fpm/</link>
+    <description>Recent content in PHP-FPM on 云原生与运维</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 20 Mar 2020 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/php-fpm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>php-fpm镜像快速安装模块</title>
+      <link>https://www.ipyker.com/post/php-image-docker/</link>
+      <pubDate>Fri, 20 Mar 2020 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/php-image-docker/</guid>
+      <description>四个命令： docker-php-ext-configure docker-php-ext-enable docker-php-ext-install docker-php-source 1. docker-php-source 此命令，实际上就是在PHP容器中创建一个/usr/src/php的目录，里面放了一些自带的文件而已。我们就把它当作一个</description>
+    </item>
+    
+  </channel>
+</rss>

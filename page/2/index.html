@@ -186,6 +186,90 @@
             
 
 <div class="post-preview">
+    <a href="https://www.ipyker.com/post/k8s-sc-nfs/">
+        <h2 class="post-title">
+            使用NFS做Kunernetes的StorageClass对象
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            PV和PVC简介 PersistentVolume（PV）是指由集群管理员配置提供的某存储系统上的段存储空间，它是对底层共享存储的抽象，将共享
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Thursday, January 16, 2020
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="https://www.ipyker.com/post/linux-makefile/">
+        <h2 class="post-title">
+            Shell中的makefile使用
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            = : 在等号右侧的值是变量的值，右侧的值可以定义在文件中的任何一处，也就是说，右侧中的变量不一定非要是已经定义好的值，其也可以使用后面定义的值
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Monday, December 16, 2019
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/">
+        <h2 class="post-title">
+            Kubernetes集群升级etcd故障处理
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            1. 升级 将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。 $ yum install -y kubeadm=1.18.3 kubectl=1.18.3 kubelet=1.18.3 $ kubeadm config images list
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Saturday, September 28, 2019
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/">
+        <h2 class="post-title">
+            Kubernetes安装zookeeper 3.5.5
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            1. 准备zookeeper statefulset文件 $ cat zk-statefulset.yaml apiVersion: apps/v1beta1 kind: StatefulSet metadata: name: zoo spec: serviceName: &#34;zoo&#34; replicas: 3 template: metadata: labels: app: zookeeper spec: terminationGracePeriodSeconds: 10 containers: - name: zookeeper image: registry.cn-shenzhen.aliyuncs.com/pyker/zookeeper:3.5.5 imagePullPolicy: IfNotPresent readinessProbe: httpGet: path: /commands/ruok port: 8080 initialDelaySeconds: 10 timeoutSeconds: 5 periodSeconds: 3 livenessProbe: httpGet:
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Tuesday, August 27, 2019
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
     <a href="https://www.ipyker.com/post/2020-11-01-k8s_error_status/">
         <h2 class="post-title">
             Kubernetes常见的Pod 状态
@@ -206,90 +290,6 @@
 </div>
 <hr>
 
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/">
-        <h2 class="post-title">
-            Kubernetes 集群的零停机服务器更新 （一）
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            Kubernetes 集群的滚动更新 在 Kubernetes 集群的生命周期中的某个时候，您将需要对基础节点执行维护。这可能包括程序包更新、内核升级或部署新的 VM 镜像。在 Kubernetes 中，被视为“
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Monday, January 1, 0001
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">
-        <h2 class="post-title">
-            优雅关闭 Kubernetes 集群中的 Pod （二）
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            优雅停止 Kubernetes 中的容器 这是实现 Kubernetes 集群零停机时间更新旅程的第二部分。在本系列的第一部分中，我们提出了原生的 drain 集群中节点的问题和挑战。在本文中，我们
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Monday, January 1, 0001
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">
-        <h2 class="post-title">
-            使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新旅程的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介绍了如何优雅关闭集群
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Monday, January 1, 0001
-    
-    
-    </p>
-
-</div>
-<hr>
-
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/">
-        <h2 class="post-title">
-            延迟关闭以等待 Pod 删除传播 （三）
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            延迟关闭 Kubernetes 中的 Pod 这是实现 Kubernetes 集群零停机时间更新的旅程的第三部分。在本系列的第二部分中，我们通过利用生命周期钩子来实现应用程序 Pod 的正常终止，从而
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;&#34; Monday, January 1, 0001
-    
-    
-    </p>
-
-</div>
-<hr>
-
 
             
 
@@ -300,6 +300,10 @@
         <a href="/">&larr; Newer Posts</a>
     </li>
     
+    
+    <li class="next">
+        <a href="/page/3/">Older Posts &rarr;</a>
+    </li>
     
 </ul>
 
@@ -327,6 +331,10 @@
                
             
                
+            
+               
+            
+               
                     <a href="/tags/kubernetes" title="kubernetes">
                         kubernetes
                     </a>
@@ -335,9 +343,19 @@
                
             
                
+            
+               
+            
+               
+            
+               
+            
+               
                     <a href="/tags/pod" title="pod">
                         pod
                     </a>
+               
+            
                
             
                

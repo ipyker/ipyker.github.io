@@ -35,6 +35,42 @@
     </item>
     
     <item>
+      <title>Kubernetes 部署高可用Redis Cluster</title>
+      <link>https://www.ipyker.com/post/k8s-redis-cluster/</link>
+      <pubDate>Sun, 16 Aug 2020 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/k8s-redis-cluster/</guid>
+      <description>部署方式 Statefulset Service &amp;amp; depolyment 对于redis,mysql这种有状态的服务,我们使用statefulset方式为首选.我们这边主要就是介绍statefuls</description>
+    </item>
+    
+    <item>
+      <title>php-fpm镜像快速安装模块</title>
+      <link>https://www.ipyker.com/post/php-image-docker/</link>
+      <pubDate>Fri, 20 Mar 2020 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/php-image-docker/</guid>
+      <description>四个命令： docker-php-ext-configure docker-php-ext-enable docker-php-ext-install docker-php-source 1. docker-php-source 此命令，实际上就是在PHP容器中创建一个/usr/src/php的目录，里面放了一些自带的文件而已。我们就把它当作一个</description>
+    </item>
+    
+    <item>
+      <title>使用NFS做Kunernetes的StorageClass对象</title>
+      <link>https://www.ipyker.com/post/k8s-sc-nfs/</link>
+      <pubDate>Thu, 16 Jan 2020 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/k8s-sc-nfs/</guid>
+      <description>PV和PVC简介 PersistentVolume（PV）是指由集群管理员配置提供的某存储系统上的段存储空间，它是对底层共享存储的抽象，将共享</description>
+    </item>
+    
+    <item>
+      <title>Shell中的makefile使用</title>
+      <link>https://www.ipyker.com/post/linux-makefile/</link>
+      <pubDate>Mon, 16 Dec 2019 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/linux-makefile/</guid>
+      <description>= : 在等号右侧的值是变量的值，右侧的值可以定义在文件中的任何一处，也就是说，右侧中的变量不一定非要是已经定义好的值，其也可以使用后面定义的值</description>
+    </item>
+    
+    <item>
       <title>Kubernetes集群升级etcd故障处理</title>
       <link>https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/</link>
       <pubDate>Sat, 28 Sep 2019 00:00:00 +0000</pubDate>

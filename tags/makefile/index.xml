@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>makefile on 云原生与运维</title>
+    <link>https://www.ipyker.com/tags/makefile/</link>
+    <description>Recent content in makefile on 云原生与运维</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 16 Dec 2019 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/makefile/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Shell中的makefile使用</title>
+      <link>https://www.ipyker.com/post/linux-makefile/</link>
+      <pubDate>Mon, 16 Dec 2019 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/linux-makefile/</guid>
+      <description>= : 在等号右侧的值是变量的值，右侧的值可以定义在文件中的任何一处，也就是说，右侧中的变量不一定非要是已经定义好的值，其也可以使用后面定义的值</description>
+    </item>
+    
+  </channel>
+</rss>
