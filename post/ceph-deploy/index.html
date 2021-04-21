@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="分布式存储Ceph集群搭建" />
+    <meta property="og:title" content="分布式存储Ceph集群搭建" />
+    <meta property="twitter:title" content="分布式存储Ceph集群搭建" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>分布式存储Ceph集群搭建-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/ceph-deploy/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic1.win4000.com%2Fwallpaper%2F4%2F5487fbb81ba43.jpg&refer=http%3A%2F%2Fpic1.win4000.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621616511&t=49a61018c0e065eb9ce8949453e70ef4')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                    </div>
+                    <h1>分布式存储Ceph集群搭建</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Monday, November 16, 2020
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#1-环境介绍">1. 环境介绍</a></li>
+        <li><a href="#2-环境准备">2. 环境准备</a></li>
+        <li><a href="#3-安装ceph集群">3. 安装ceph集群</a></li>
+        <li><a href="#4-扩展ceph节点">4. 扩展ceph节点</a></li>
+        <li><a href="#5-客户端使用ceph-rbd存储">5. 客户端使用ceph rbd存储</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                
+                <h2 id="1-环境介绍">1. 环境介绍</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">主机名</th>
+<th style="text-align:center">IP</th>
+<th style="text-align:center">角色</th>
+<th style="text-align:center">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">ceph-70</td>
+<td style="text-align:center">10.80.75.70</td>
+<td style="text-align:center">控制机</td>
+<td style="text-align:center">管理节点</td>
+</tr>
+<tr>
+<td style="text-align:center">ceph-71</td>
+<td style="text-align:center">10.80.75.71</td>
+<td style="text-align:center">mon、mgr、osd</td>
+<td style="text-align:center">监控、管理、存储节点</td>
+</tr>
+<tr>
+<td style="text-align:center">ceph-72</td>
+<td style="text-align:center">10.80.75.72</td>
+<td style="text-align:center">osd</td>
+<td style="text-align:center">存储节点</td>
+</tr>
+<tr>
+<td style="text-align:center">ceph-73</td>
+<td style="text-align:center">10.80.75.73</td>
+<td style="text-align:center">osd</td>
+<td style="text-align:center">存储节点</td>
+</tr>
+<tr>
+<td style="text-align:center">ceph-client</td>
+<td style="text-align:center">10.80.73.94</td>
+<td style="text-align:center">client</td>
+<td style="text-align:center">挂载ceph存储的客户端</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注意⚠️：<code>ceph-71、ceph-72、ceph-73</code>主机上都挂载了至少1快用于做osd的磁盘，该磁盘无需格式化、分区等操作。只要系统能识别到即可。这里识别到的名称为<code>/dev/sdc</code>。在3.11步骤需要使用。</p>
+</blockquote>
+<h2 id="2-环境准备">2. 环境准备</h2>
+<p><code>以下操作无特殊说明5台机器上都要操作，这里只拿ceph-70演示</code></p>
+<p><code>以下所有ceph-deploy的命令都是在ceph-70上操作的</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 修改主机名</span>
+$ hostname ceph-70
+$ <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;ceph-70&#34;</span> &gt; /etc/hostname
+
+<span style="color:#6272a4"># 修改hosts解析</span>
+$ cat &gt;&gt; /etc/hosts <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">10.80.75.70 ceph-70
+</span><span style="color:#f1fa8c">10.80.75.71 ceph-71
+</span><span style="color:#f1fa8c">10.80.75.72 ceph-72
+</span><span style="color:#f1fa8c">10.80.75.73 ceph-73
+</span><span style="color:#f1fa8c">10.80.73.94 ceph-client
+</span><span style="color:#f1fa8c">EOF</span>
+
+<span style="color:#6272a4"># 时间同步</span>
+$ ntpdate ntp1.aliyun.com
+
+<span style="color:#6272a4"># 创建一个ceph用户</span>
+$ useradd user_00
+$ passwd user_00
+
+<span style="color:#6272a4"># 安装依赖包</span>
+$ yum install -y epel-release python-setuptools yum-plugin-priorities
+
+<span style="color:#6272a4"># 无密码sudo</span>
+$ visudo
+添加 user_00    <span style="color:#8be9fd;font-style:italic">ALL</span><span style="color:#ff79c6">=(</span>ALL<span style="color:#ff79c6">)</span>   NOPASSWD:ALL
+
+<span style="color:#6272a4"># 准备密钥（只在ceph-70上操作）</span>
+$ su - user_00
+$ ssh-keygen -t rsa
+
+<span style="color:#6272a4"># 复制密钥到其他节点（只在ceph-70上操作）</span>
+$ ssh-copy-id user_00@ceph-71
+$ ssh-copy-id user_00@ceph-72
+$ ssh-copy-id user_00@ceph-73
+$ ssh-copy-id user_00@ceph-client
+
+<span style="color:#6272a4"># 配置传递给ceph-deploy的ssh用户名，也可以命令行加--username user_00代替。（只在ceph-70上操作）</span>
+$ cat &gt;&gt; ~/.ssh/config <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">cat ~/.ssh/config
+</span><span style="color:#f1fa8c">Host ceph-71
+</span><span style="color:#f1fa8c">    Hostname ceph-71
+</span><span style="color:#f1fa8c">    User user_00
+</span><span style="color:#f1fa8c">Host ceph-72
+</span><span style="color:#f1fa8c">    Hostname ceph-72
+</span><span style="color:#f1fa8c">    User user_00
+</span><span style="color:#f1fa8c">Host ceph-72
+</span><span style="color:#f1fa8c">    Hostname ceph-72
+</span><span style="color:#f1fa8c">    User user_00
+</span><span style="color:#f1fa8c">Host ceph-client
+</span><span style="color:#f1fa8c">    Hostname ceph-client
+</span><span style="color:#f1fa8c">    User user_00    
+</span><span style="color:#f1fa8c">EOF</span>    
+</code></pre></div><h2 id="3-安装ceph集群">3. 安装ceph集群</h2>
+<p><code>以下操作无特殊说明都是在ceph-70主机上操作</code></p>
+<h3 id="31-配置yum源">3.1 配置yum源</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat &gt; /etc/yum.repos.d/ceph.repo <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">[ceph]
+</span><span style="color:#f1fa8c">name=Ceph packages for $basearch
+</span><span style="color:#f1fa8c">baseurl=http://mirrors.aliyun.com/ceph/rpm-luminous/el7/$basearch
+</span><span style="color:#f1fa8c">enabled=1
+</span><span style="color:#f1fa8c">gpgcheck=1
+</span><span style="color:#f1fa8c">priority=1
+</span><span style="color:#f1fa8c">type=rpm-md
+</span><span style="color:#f1fa8c">gpgkey=https://mirrors.aliyun.com/ceph/keys/release.asc
+</span><span style="color:#f1fa8c">
+</span><span style="color:#f1fa8c">[ceph-noarch]
+</span><span style="color:#f1fa8c">name=Ceph noarch packages
+</span><span style="color:#f1fa8c">baseurl=http://mirrors.aliyun.com/ceph/rpm-luminous/el7/noarch
+</span><span style="color:#f1fa8c">enabled=1
+</span><span style="color:#f1fa8c">gpgcheck=1
+</span><span style="color:#f1fa8c">priority=1
+</span><span style="color:#f1fa8c">type=rpm-md
+</span><span style="color:#f1fa8c">gpgkey=https://mirrors.aliyun.com/ceph/keys/release.asc
+</span><span style="color:#f1fa8c">
+</span><span style="color:#f1fa8c">[ceph-source]
+</span><span style="color:#f1fa8c">name=Ceph source packages
+</span><span style="color:#f1fa8c">baseurl=http://mirrors.aliyun.com/ceph/rpm-luminous/el7/SRPMS
+</span><span style="color:#f1fa8c">enabled=0
+</span><span style="color:#f1fa8c">gpgcheck=1
+</span><span style="color:#f1fa8c">type=rpm-md
+</span><span style="color:#f1fa8c">gpgkey=https://mirrors.aliyun.com/ceph/keys/release.asc
+</span><span style="color:#f1fa8c">priority=1
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><h3 id="32-防止ceph-deploy安装时覆盖原源">3.2 防止ceph-deploy安装时覆盖原源</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat &gt;&gt; /etc/profile <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">export CEPH_DEPLOY_REPO_URL=http://mirrors.aliyun.com/ceph/rpm-luminous/el7
+</span><span style="color:#f1fa8c">export CEPH_DEPLOY_GPG_URL=http://mirrors.aliyun.com/ceph/keys/release.asc
+</span><span style="color:#f1fa8c">EOF</span>
+$ <span style="color:#8be9fd;font-style:italic">source</span> /etc/profile
+<span style="color:#6272a4"># 除了该方法还可以在ceph-deploy install 时指定 --repo-url参数，如步骤3.7。</span>
+</code></pre></div><h3 id="33-安装ceph-deploy">3.3 安装ceph-deploy</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ yum update -y <span style="color:#ff79c6">&amp;&amp;</span> yum install -y ceph-deploy
+</code></pre></div><h3 id="34-创建ceph-deploy工作目录">3.4 创建ceph-deploy工作目录</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ su - user_00
+$ mkdir ~/ceph-cluster
+$ <span style="color:#8be9fd;font-style:italic">cd</span> ~/ceph-cluster
+</code></pre></div><blockquote>
+<p>注意：⚠️不要使用sudo来运行ceph-deploy命令</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 任何时候出现安装错误，则可以执行以下的命令以清空Ceph的package以及擦除它的数据和配置：</span>
+$ ceph-deploy purge ceph-71 ceph-72 ceph-73
+$ ceph-deploy purgedata ceph-71 ceph-72 ceph-73
+$ ceph-deploy forgetkeys
+$ rm -rf ceph.*
+</code></pre></div><h3 id="35-创建一个集群">3.5 创建一个集群</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 若有多个节点，空格分隔</span>
+$ ceph-deploy new ceph-71
+&gt; 此时~/ceph-cluster目录下会生成配置文件、密钥文件和日志文件
+</code></pre></div><h3 id="36-修改配置文件">3.6 修改配置文件</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 根据情况修改</span>
+$ vi ~/ceph-cluster/ceph.conf
+<span style="color:#ff79c6">[</span>global<span style="color:#ff79c6">]</span>
+<span style="color:#8be9fd;font-style:italic">fsid</span> <span style="color:#ff79c6">=</span> 1260148c-a8bd-4d4e-ba31-bb694573121e
+<span style="color:#8be9fd;font-style:italic">mon_initial_members</span> <span style="color:#ff79c6">=</span> ceph-71
+<span style="color:#8be9fd;font-style:italic">mon_host</span> <span style="color:#ff79c6">=</span> 10.80.75.71
+<span style="color:#8be9fd;font-style:italic">auth_cluster_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">auth_service_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">auth_client_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">osd_pool_default_size</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">3</span>
+<span style="color:#8be9fd;font-style:italic">osd_pool_default_min_size</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span>
+<span style="color:#8be9fd;font-style:italic">public_network</span> <span style="color:#ff79c6">=</span> 10.80.75.0/24
+
+</code></pre></div><h3 id="37-为其他节点安装ceph包">3.7 为其他节点安装ceph包</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy install ceph-71 ceph-72 ceph-73
+<span style="color:#6272a4"># 或者</span>
+$ ceph-deploy install ceph-71 ceph-72 ceph-73 --repo-url http://mirrors.aliyun.com/ceph/rpm-luminous/el7
+</code></pre></div><h3 id="38-部署ceph-mon并生成keyring">3.8 部署ceph-mon并生成keyring</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy mon create-initial
+&gt; 此时ceph-cluster目录下会出现多个组件的keyring文件
+</code></pre></div><h3 id="39-推送配置文件到所有ceph节点">3.9 推送配置文件到所有ceph节点</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy admin ceph-71 ceph-72 ceph-73
+</code></pre></div><h3 id="310-创建ceph-mgr管理节点">3.10 创建ceph-mgr管理节点</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 部署一个mgr，(Luminous版本开始要求需要）</span>
+$ ceph-deploy mgr create ceph-71
+$ cat &gt;&gt; ~/ceph-cluster/ceph.conf <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">[mgr]
+</span><span style="color:#f1fa8c">mgr_modules = dashboard
+</span><span style="color:#f1fa8c">EOF</span>
+$ ceph-deploy --overwrite-conf config push ceph-71 ceph-72 ceph-73
+<span style="color:#6272a4"># 开启dashboard，默认7000端口 （ceph-71主机上操作）</span>
+$ ceph config-key put mgr/dashboard/server_addr 10.80.75.71 
+$ ceph config-key put mgr/dashboard/server_port <span style="color:#bd93f9">7000</span>
+</code></pre></div><h3 id="311-初始化添加3个osd">3.11 初始化添加3个osd</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy osd create ceph-71 --data /dev/sdc
+$ ceph-deploy osd create ceph-72 --data /dev/sdc
+$ ceph-deploy osd create ceph-73 --data /dev/sdc
+</code></pre></div><h3 id="312-验证集群状态信息">3.12 验证集群状态信息</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ssh ceph-71 sudo ceph -s
+  cluster:
+    id:     1260148c-a8bd-4d4e-ba31-bb694573121e
+    health: HEALTH_OK
+
+  services:
+    mon: <span style="color:#bd93f9">1</span> daemons, quorum ceph-71
+    mgr: ceph-71<span style="color:#ff79c6">(</span>active<span style="color:#ff79c6">)</span>
+    osd: <span style="color:#bd93f9">3</span> osds: <span style="color:#bd93f9">3</span> up, <span style="color:#bd93f9">3</span> in
+</code></pre></div><h2 id="4-扩展ceph节点">4. 扩展ceph节点</h2>
+<h3 id="41-新增节点组件">4.1 新增节点组件</h3>
+<p><code>mds</code>：在原有基础上新增一个ceph-mds组件，元数据服务。</p>
+<p><code>mon</code>：在原有基础上新增两个ceph-mon组件，为ceph-mon提供高可用。</p>
+<p><code>mgr</code>：在原有基础上新增两个ceph-mgr管理组件，为ceph-mgr提供高可用，官方建议只部署2个。</p>
+<p><code>rgw</code>：在原有基础上增加一个ceph-rgw组件，提供对象存储功能。</p>
+<p>最终集群环境组件为：<code>3个mon、1个mds、3个mgr、1个rgw、3个osd</code>。</p>
+<h3 id="42-修改配置文件">4.2 修改配置文件</h3>
+<p><code>以下操作无特殊说明都是在ceph-70主机上操作</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 修改mon节点信息</span>
+$ vi ~/ceph-cluster/ceph.conf
+<span style="color:#ff79c6">[</span>global<span style="color:#ff79c6">]</span>
+<span style="color:#8be9fd;font-style:italic">fsid</span> <span style="color:#ff79c6">=</span> 1260148c-a8bd-4d4e-ba31-bb694573121e
+<span style="color:#8be9fd;font-style:italic">mon_initial_members</span> <span style="color:#ff79c6">=</span> ceph-71,ceph-72,ceph-73
+<span style="color:#8be9fd;font-style:italic">mon_host</span> <span style="color:#ff79c6">=</span> 10.80.75.71,10.80.75.72,10.80.75.73
+<span style="color:#8be9fd;font-style:italic">auth_cluster_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">auth_service_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">auth_client_required</span> <span style="color:#ff79c6">=</span> cephx
+<span style="color:#8be9fd;font-style:italic">osd_pool_default_size</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">3</span>
+<span style="color:#8be9fd;font-style:italic">osd_pool_default_min_size</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span>
+<span style="color:#8be9fd;font-style:italic">public_network</span> <span style="color:#ff79c6">=</span> 10.80.75.0/24
+
+<span style="color:#ff79c6">[</span>mgr<span style="color:#ff79c6">]</span>
+<span style="color:#8be9fd;font-style:italic">mgr_modules</span> <span style="color:#ff79c6">=</span> dashboard
+
+<span style="color:#6272a4"># 推送新配置至所有ceph节点</span>
+$ ceph-deploy --overwrite-conf config push ceph-71 ceph-72 ceph-73
+</code></pre></div><h3 id="42-新增一个metadata节点">4.2 新增一个metadata节点</h3>
+<p>如果要使用CephFS，就必须至少添加一个metadata server</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 这里将mds放在了ceph-71节点上</span>
+$ ceph-deploy mds create ceph-71
+</code></pre></div><h3 id="43-新增两个mon节点">4.3 新增两个mon节点</h3>
+<p>为达到High Availability的效果，官方建议部署3个mon节点</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy mon add ceph-72
+$ ceph-deploy mon add ceph-73
+</code></pre></div><h3 id="44-查看法定ceph节点状态信息">4.4 查看法定ceph节点状态信息</h3>
+<p>在添加新的monitor之后，ceph会开始同步这些monitor。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ssh ceph-71 sudo ceph quorum_status --format json-pretty
+<span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;election_epoch&#34;</span>: 12,
+    <span style="color:#f1fa8c">&#34;quorum&#34;</span>: <span style="color:#ff79c6">[</span>
+        0,
+        1,
+        <span style="color:#bd93f9">2</span>
+    <span style="color:#ff79c6">]</span>,
+    <span style="color:#f1fa8c">&#34;quorum_names&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#f1fa8c">&#34;ceph-71&#34;</span>,
+        <span style="color:#f1fa8c">&#34;ceph-72&#34;</span>,
+        <span style="color:#f1fa8c">&#34;ceph-73&#34;</span>
+    <span style="color:#ff79c6">]</span>,
+    <span style="color:#f1fa8c">&#34;quorum_leader_name&#34;</span>: <span style="color:#f1fa8c">&#34;ceph-71&#34;</span>,
+    <span style="color:#f1fa8c">&#34;monmap&#34;</span>: <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;epoch&#34;</span>: 3,
+        <span style="color:#f1fa8c">&#34;fsid&#34;</span>: <span style="color:#f1fa8c">&#34;1260148c-a8bd-4d4e-ba31-bb694573121e&#34;</span>,
+        <span style="color:#f1fa8c">&#34;modified&#34;</span>: <span style="color:#f1fa8c">&#34;2020-11-10 18:21:55.151155&#34;</span>,
+        <span style="color:#f1fa8c">&#34;created&#34;</span>: <span style="color:#f1fa8c">&#34;2020-11-10 17:57:40.425611&#34;</span>,
+        <span style="color:#f1fa8c">&#34;features&#34;</span>: <span style="color:#ff79c6">{</span>
+            <span style="color:#f1fa8c">&#34;persistent&#34;</span>: <span style="color:#ff79c6">[</span>
+                <span style="color:#f1fa8c">&#34;kraken&#34;</span>,
+                <span style="color:#f1fa8c">&#34;luminous&#34;</span>
+            <span style="color:#ff79c6">]</span>,
+            <span style="color:#f1fa8c">&#34;optional&#34;</span>: <span style="color:#ff79c6">[]</span>
+        <span style="color:#ff79c6">}</span>,
+        <span style="color:#f1fa8c">&#34;mons&#34;</span>: <span style="color:#ff79c6">[</span>
+            <span style="color:#ff79c6">{</span>
+                <span style="color:#f1fa8c">&#34;rank&#34;</span>: 0,
+                <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;ceph-71&#34;</span>,
+                <span style="color:#f1fa8c">&#34;addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.71:6789/0&#34;</span>,
+                <span style="color:#f1fa8c">&#34;public_addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.71:6789/0&#34;</span>
+            <span style="color:#ff79c6">}</span>,
+            <span style="color:#ff79c6">{</span>
+                <span style="color:#f1fa8c">&#34;rank&#34;</span>: 1,
+                <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;ceph-72&#34;</span>,
+                <span style="color:#f1fa8c">&#34;addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.72:6789/0&#34;</span>,
+                <span style="color:#f1fa8c">&#34;public_addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.72:6789/0&#34;</span>
+            <span style="color:#ff79c6">}</span>,
+            <span style="color:#ff79c6">{</span>
+                <span style="color:#f1fa8c">&#34;rank&#34;</span>: 2,
+                <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;ceph-73&#34;</span>,
+                <span style="color:#f1fa8c">&#34;addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.73:6789/0&#34;</span>,
+                <span style="color:#f1fa8c">&#34;public_addr&#34;</span>: <span style="color:#f1fa8c">&#34;10.80.75.73:6789/0&#34;</span>
+            <span style="color:#ff79c6">}</span>
+        <span style="color:#ff79c6">]</span>
+    <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span>
+</code></pre></div><blockquote>
+<p>小提示：当给Ceph安装多个monitor之后，应该确保每个monitor节点的时间同步。</p>
+</blockquote>
+<h3 id="45-新增两个mgr节点">4.5 新增两个mgr节点</h3>
+<p>Ceph Manager daemon工作在active/standby的模式。添加多manager，可以保证如果一个manager或host宕掉，另一个manager可以无缝接管过来。可以通过ceph -s命令看到active和standby的manager。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy mgr create ceph-72 ceph-73
+</code></pre></div><h3 id="46-新增一个rgw节点">4.6 新增一个rgw节点</h3>
+<p>要部署Ceph Object Gateway组件，就必须部署一个RGW实例。默认端口7480</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy rgw create ceph-71
+</code></pre></div><p>至此ceph集群扩展完成！可以通过ceph -s查看集群。也可以用3.10步骤的管理页面打开。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ssh ceph-71 sudo ceph -s
+  cluster:
+    id:     1260148c-a8bd-4d4e-ba31-bb694573121e
+    health: HEALTH_OK
+
+  services:
+    mon: <span style="color:#bd93f9">3</span> daemons, quorum ceph-71,ceph-72,ceph-73
+    mgr: ceph-71<span style="color:#ff79c6">(</span>active<span style="color:#ff79c6">)</span>, standbys: ceph-72, ceph-73
+    osd: <span style="color:#bd93f9">3</span> osds: <span style="color:#bd93f9">3</span> up, <span style="color:#bd93f9">3</span> in
+    rgw: <span style="color:#bd93f9">2</span> daemons active
+
+  data:
+    pools:   <span style="color:#bd93f9">5</span> pools, <span style="color:#bd93f9">40</span> pgs
+    objects: <span style="color:#bd93f9">267</span> objects, 136MiB
+    usage:   4.63GiB used, 85.4GiB / 90.0GiB avail
+    pgs:     <span style="color:#bd93f9">40</span> active+clean
+
+  io:
+    client:   0B/s rd, 0op/s rd, 0op/s wr
+</code></pre></div><h2 id="5-客户端使用ceph-rbd存储">5. 客户端使用ceph rbd存储</h2>
+<h3 id="51-给客户端安装ceph">5.1 给客户端安装ceph</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy install ceph-client 
+</code></pre></div><h3 id="52-推送配置文件到客户端">5.2 推送配置文件到客户端</h3>
+<p>将Ceph配置文件和ceph.client.admin.keyring拷贝到ceph-client上，并且授予读权限。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph-deploy admin ceph-client
+$ ssh ceph-client sudo chmod +r /etc/ceph/ceph.client.admin.keyring
+</code></pre></div><h3 id="53-创建pg-pool">5.3 创建PG Pool</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ceph osd pool create mypool <span style="color:#bd93f9">8</span> <span style="color:#bd93f9">8</span>   <span style="color:#6272a4"># 8是该pool的PG的数量,下面在说PG数量原则。</span>
+</code></pre></div><h3 id="54-初始化该pg-pool可用于rbd">5.4 初始化该PG Pool可用于rbd</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ rbd pool init mypool
+</code></pre></div><h3 id="55-创建一个块设备">5.5 创建一个块设备</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 创建一个rbd卷</span>
+$ rbd create foo --pool mypool --size <span style="color:#bd93f9">4096</span> --image-feature layering -m 10.80.75.71 -k /etc/ceph/ceph.client.admin.keyring
+
+<span style="color:#6272a4"># 查看所创建的rbd卷</span>
+$ rbd info foo -p mypool
+</code></pre></div><h3 id="56-映射rbd卷到块设备">5.6 映射rbd卷到块设备</h3>
+<p><code>以下操作均在ceph-client上执行</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># rbd卷映射到系统块设备上， /dev/rbd0格式</span>
+$ rbd map mypool/foo --name client.admin -m 10.80.75.71 -k /etc/ceph/ceph.client.admin.keyring
+
+<span style="color:#6272a4"># 格式化/dev/rbd0块设备</span>
+$ mkfs.ext4 /dev/rbd0
+
+<span style="color:#6272a4"># 挂载块设备</span>
+$ mkdir /mnt/rbdfile
+$ mount /dev/rbd0 /mnt/rbdfile
+</code></pre></div><p>至此客户端挂载块设备rbd完成！ 5.6 步骤可以在多台客户端执行，从而挂载同一个rbd，达到共享数据。</p>
+<p>注意：<code>mkfs.ext4</code> 格式化只在第一次挂载的时候执行。后续不需要执行，防止数据丢失。</p>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/2021-04-19-k8s_node_upgrade/" data-toggle="tooltip" data-placement="top" title="Kubernetes集群升级etcd故障处理">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/post/k8s-coredns-nodelocaldns/" data-toggle="tooltip" data-placement="top" title="Kubernetes DNS查询和优化">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>

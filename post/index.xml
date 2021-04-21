@@ -26,6 +26,15 @@
     </item>
     
     <item>
+      <title>分布式存储Ceph集群搭建</title>
+      <link>https://www.ipyker.com/post/ceph-deploy/</link>
+      <pubDate>Mon, 16 Nov 2020 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/ceph-deploy/</guid>
+      <description>1. 环境介绍 主机名 IP 角色 描述 ceph-70 10.80.75.70 控制机 管理节点 ceph-71 10.80.75.71 mon、mgr、osd 监控、管理、存储节点 ceph-72 10.80.75.72 osd 存储节点 ceph-73 10.80.75.73 osd 存储节点 ceph-client 10.80.73.94 client 挂载ceph存储</description>
+    </item>
+    
+    <item>
       <title>Kubernetes集群升级etcd故障处理</title>
       <link>https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/</link>
       <pubDate>Sat, 28 Sep 2019 00:00:00 +0000</pubDate>
