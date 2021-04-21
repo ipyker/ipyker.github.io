@@ -343,7 +343,7 @@
 </span><span style="color:#f1fa8c">    cluster.local:53 {
 </span><span style="color:#f1fa8c">        errors
 </span><span style="color:#f1fa8c">        cache {
-</span><span style="color:#f1fa8c">                success 9984 30
+</span><span style="color:#f1fa8c">                success 9984 3600
 </span><span style="color:#f1fa8c">                denial 9984 5
 </span><span style="color:#f1fa8c">        }
 </span><span style="color:#f1fa8c">        reload
@@ -498,7 +498,7 @@
 <span style="color:#ff79c6">)</span>
 
 <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$yaml</span><span style="color:#f1fa8c">&#34;</span> &gt; nodelocaldns-ds.yaml
-kubectl create -f nodelocaldns-ds.yaml
+kubectl apply -f nodelocaldns-ds.yaml
 </code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sh install-nodelocaldns.sh
 </code></pre></div><p>此时已经完成了nodelocaldns的部署。通过查看日志会发现nodelocaldns已经正常参与解析。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl logs node-local-dns-8x3o5 -n kube-system
