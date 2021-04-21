@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="Kubernetes DNS查询和优化" />
+    <meta property="og:title" content="Kubernetes DNS查询和优化" />
+    <meta property="twitter:title" content="Kubernetes DNS查询和优化" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>Kubernetes DNS查询和优化-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/k8s-coredns-nodelocaldns/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('/img/post-bg-coffee.jpeg')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                    </div>
+                    <h1>Kubernetes DNS查询和优化</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;&#34;
+                         
+                        on 
+                        Friday, April 16, 2021
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#合理的dns副本数">合理的dns副本数</a></li>
+        <li><a href="#部署nodelocaldns">部署NodeLocaldns</a></li>
+        <li><a href="#解析search域影响查询响应">解析search域影响查询响应</a></li>
+        <li><a href="#为什么ndots5会对应用程序性能产生负面影响">为什么ndots：5会对应用程序性能产生负面影响？</a></li>
+        <li><a href="#dns缓存命中和延时">DNS缓存命中和延时</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                
+                <p>CoreDNS是Kubernetes集群中负责DNS解析的组件，能够支持解析集群内部自定义服务域名和集群外部域名。CoreDNS具备丰富的插件集，在集群层面支持自建DNS、自定义hosts、CNAME、rewrite等需求。K8S集群中默认部署形态在DNS QPS较高场景下，可能会出现解析压力，导致部分查询失败。本文介绍如何优化集群DNS性能。</p>
+<h2 id="合理的dns副本数">合理的dns副本数</h2>
+<p>调整CoreDNS副本数与集群节点数到合适比率有助于提升集群服务发现的性能，该比值推荐为1:8，即一个CoreDNS Pod支撑8个集群节点。</p>
+<ul>
+<li>当集群节点无需大规模扩缩容时，执行以下命令调整目标副本数到目标值。</li>
+</ul>
+<blockquote>
+<p>kubectl scale &ndash;replicas={target} deployment/coredns -n kube-system</p>
+</blockquote>
+<ul>
+<li>集群节点需要大规模扩缩容时，推荐部署以下YAML模板，使用集群水平伸缩器<a href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler?spm=a2c4g.11186623.2.10.7bcd4422Q3s7tF">cluster-proportional-autoscaler</a>动态调整副本数量。不建议使用针对QPS、CPU或MEM指标的水平伸缩器，实测效果较差.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">apiVersion</span>: apps/v1
+<span style="color:#ff79c6">kind</span>: Deployment
+<span style="color:#ff79c6">metadata</span>:
+  <span style="color:#ff79c6">name</span>: dns-autoscaler
+  <span style="color:#ff79c6">namespace</span>: kube-system
+  <span style="color:#ff79c6">labels</span>:
+    <span style="color:#ff79c6">k8s-app</span>: dns-autoscaler
+<span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">selector</span>:
+    <span style="color:#ff79c6">matchLabels</span>:
+       <span style="color:#ff79c6">k8s-app</span>: dns-autoscaler
+  <span style="color:#ff79c6">template</span>:
+    <span style="color:#ff79c6">metadata</span>:
+      <span style="color:#ff79c6">labels</span>:
+        <span style="color:#ff79c6">k8s-app</span>: dns-autoscaler
+
+    <span style="color:#ff79c6">spec</span>:
+      <span style="color:#ff79c6">serviceAccountName</span>: admin
+      <span style="color:#ff79c6">containers</span>:
+      - <span style="color:#ff79c6">name</span>: autoscaler
+        <span style="color:#ff79c6">image</span>: registry.cn-hangzhou.aliyuncs.com/ringtail/cluster-proportional-autoscaler-amd64:v1.3.0
+        <span style="color:#ff79c6">resources</span>:
+            <span style="color:#ff79c6">requests</span>:
+                <span style="color:#ff79c6">cpu</span>: <span style="color:#f1fa8c">&#34;200m&#34;</span>
+                <span style="color:#ff79c6">memory</span>: <span style="color:#f1fa8c">&#34;150Mi&#34;</span>
+        <span style="color:#ff79c6">command</span>:
+          - /cluster-proportional-autoscaler
+          - --namespace=kube-system
+          - --configmap=dns-autoscaler
+          - --target=Deployment/coredns
+          - --default-params={&#34;linear&#34;:{&#34;coresPerReplica&#34;:2,&#34;nodesPerReplica&#34;:1,&#34;min&#34;:2,&#34;max&#34;:100,&#34;preventSinglePointFailure&#34;:true}}
+          - --logtostderr=true
+          - --v=2
+</code></pre></div><blockquote>
+<p>上述使用线程伸缩策略中，CoreDNS副本数的计算公式为replicas = max (ceil (cores × 1/coresPerReplica), ceil (nodes × 1/nodesPerReplica) )，且CoreDNS副本数受到max，min限制。
+线程伸缩策略参数如下。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{
+     <span style="color:#ff79c6">&#34;coresPerReplica&#34;: </span><span style="color:#bd93f9">2</span>,                <span style="color:#6272a4"># 每个coredns pod可以处理的cpu核心数，和nodesPerReplica比较取最大值。</span>
+     <span style="color:#ff79c6">&#34;nodesPerReplica&#34;: </span><span style="color:#bd93f9">1</span>,                <span style="color:#6272a4"># 每个coredns pod 可以处理的node节点数，和coresPerReplica比较取最大值。</span>
+     <span style="color:#ff79c6">&#34;min&#34;: </span><span style="color:#bd93f9">2</span>,
+     <span style="color:#ff79c6">&#34;max&#34;: </span><span style="color:#bd93f9">100</span>,
+     <span style="color:#ff79c6">&#34;preventSinglePointFailure&#34;: </span><span style="color:#ff79c6">false</span>,  <span style="color:#6272a4"># 设置为true时，如果有多个节点，controller会确保至少有2个副本。</span>
+     <span style="color:#ff79c6">&#34;includeUnschedulableNodes&#34;: </span><span style="color:#ff79c6">false</span>   <span style="color:#6272a4"># 设置为true时，副本将根据节点总数进行伸缩。否则，副本只会根据可调度节点的数量进行扩展</span>
+}
+</code></pre></div></blockquote>
+<p>例如，给定的群集具有4个节点和13个核心。 使用上述参数，每个副本可以处理1个节点。 因此，我们需要4/1 = 4个副本来照顾所有4个节点。 每个副本可以处理2个核心。 我们需要ceil（13/2）= 7个副本来处理所有13个内核。 结果，控制器将选择较大的一个，即7。</p>
+<h2 id="部署nodelocaldns">部署NodeLocaldns</h2>
+<p><a href="https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dns/nodelocaldns">NodeLocal DNSCache</a>在集群的上运行一个dnsCache daemonset来提高clusterDNS性能和可靠性。在K8S集群上的一些测试表明：相比于纯coredns方案，nodelocaldns + coredns方案能够大幅降低DNS查询timeout的频次，提升服务稳定性，能够扛住1倍多的QPS。</p>
+<p>nodelocaldns通过添加iptables规则能够接收节点上所有发往169.254.20.10的dns查询请求，把针对集群内部域名查询请求路由到coredns；把集群外部域名请求直接通过host网络发往集群外部dns服务器。</p>
+<h3 id="架构图">架构图</h3>
+<p>
+  <img src="https://d33wubrfki0l68.cloudfront.net/bf8e5eaac697bac89c5b36a0edb8855c860bfb45/6944f/images/docs/nodelocaldns.svg" alt="">
+
+
+部署模版：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># 保存以下脚本 命名为install-nodelocaldns.sh</span>
+<span style="color:#6272a4">#!/env/bin/bash</span>
+<span style="color:#8be9fd;font-style:italic">localDnsIp</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;169.254.20.10&#34;</span>
+<span style="color:#8be9fd;font-style:italic">upstreanDnsIp</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>kubectl get svc -n kube-system | grep kube-dns | awk <span style="color:#f1fa8c">&#39;{ print $3 }&#39;</span><span style="color:#ff79c6">)</span>
+
+<span style="color:#8be9fd;font-style:italic">yaml</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>cat <span style="color:#f1fa8c">&lt;&lt;-END
+</span><span style="color:#f1fa8c">---
+</span><span style="color:#f1fa8c">apiVersion: v1
+</span><span style="color:#f1fa8c">kind: ServiceAccount
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: node-local-dns
+</span><span style="color:#f1fa8c">  namespace: kube-system
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    kubernetes.io/cluster-service: &#34;true&#34;
+</span><span style="color:#f1fa8c">    addonmanager.kubernetes.io/mode: Reconcile
+</span><span style="color:#f1fa8c">---
+</span><span style="color:#f1fa8c">apiVersion: v1
+</span><span style="color:#f1fa8c">kind: Service
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: kube-dns-upstream
+</span><span style="color:#f1fa8c">  namespace: kube-system
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    k8s-app: kube-dns
+</span><span style="color:#f1fa8c">    kubernetes.io/cluster-service: &#34;true&#34;
+</span><span style="color:#f1fa8c">    addonmanager.kubernetes.io/mode: Reconcile
+</span><span style="color:#f1fa8c">    kubernetes.io/name: &#34;KubeDNSUpstream&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  ports:
+</span><span style="color:#f1fa8c">  - name: dns
+</span><span style="color:#f1fa8c">    port: 53
+</span><span style="color:#f1fa8c">    protocol: UDP
+</span><span style="color:#f1fa8c">    targetPort: 53
+</span><span style="color:#f1fa8c">  - name: dns-tcp
+</span><span style="color:#f1fa8c">    port: 53
+</span><span style="color:#f1fa8c">    protocol: TCP
+</span><span style="color:#f1fa8c">    targetPort: 53
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    k8s-app: kube-dns
+</span><span style="color:#f1fa8c">---
+</span><span style="color:#f1fa8c">apiVersion: v1
+</span><span style="color:#f1fa8c">kind: ConfigMap
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: node-local-dns
+</span><span style="color:#f1fa8c">  namespace: kube-system
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    addonmanager.kubernetes.io/mode: Reconcile
+</span><span style="color:#f1fa8c">data:
+</span><span style="color:#f1fa8c">  Corefile: |
+</span><span style="color:#f1fa8c">    cluster.local:53 {
+</span><span style="color:#f1fa8c">        errors
+</span><span style="color:#f1fa8c">        cache {
+</span><span style="color:#f1fa8c">                success 9984 30
+</span><span style="color:#f1fa8c">                denial 9984 5
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">        reload
+</span><span style="color:#f1fa8c">        loop
+</span><span style="color:#f1fa8c">        bind $localDnsIp $upstreanDnsIp
+</span><span style="color:#f1fa8c">        forward . __PILLAR__CLUSTER__DNS__ {
+</span><span style="color:#f1fa8c">                force_tcp
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">        prometheus :9253
+</span><span style="color:#f1fa8c">        health $localDnsIp:8080
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">    in-addr.arpa:53 {
+</span><span style="color:#f1fa8c">        errors
+</span><span style="color:#f1fa8c">        cache 30
+</span><span style="color:#f1fa8c">        reload
+</span><span style="color:#f1fa8c">        loop
+</span><span style="color:#f1fa8c">        bind $localDnsIp $upstreanDnsIp
+</span><span style="color:#f1fa8c">        forward . __PILLAR__CLUSTER__DNS__ {
+</span><span style="color:#f1fa8c">                force_tcp
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">        prometheus :9253
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">    ip6.arpa:53 {
+</span><span style="color:#f1fa8c">        errors
+</span><span style="color:#f1fa8c">        cache 30
+</span><span style="color:#f1fa8c">        reload
+</span><span style="color:#f1fa8c">        loop
+</span><span style="color:#f1fa8c">        bind $localDnsIp $upstreanDnsIp
+</span><span style="color:#f1fa8c">        forward . __PILLAR__CLUSTER__DNS__ {
+</span><span style="color:#f1fa8c">                force_tcp
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">        prometheus :9253
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">    .:53 {
+</span><span style="color:#f1fa8c">        errors
+</span><span style="color:#f1fa8c">        cache 30
+</span><span style="color:#f1fa8c">        reload
+</span><span style="color:#f1fa8c">        loop
+</span><span style="color:#f1fa8c">        bind $localDnsIp $upstreanDnsIp
+</span><span style="color:#f1fa8c">        forward . __PILLAR__UPSTREAM__SERVERS__
+</span><span style="color:#f1fa8c">        prometheus :9253
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">---
+</span><span style="color:#f1fa8c">apiVersion: apps/v1
+</span><span style="color:#f1fa8c">kind: DaemonSet
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: node-local-dns
+</span><span style="color:#f1fa8c">  namespace: kube-system
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    k8s-app: node-local-dns
+</span><span style="color:#f1fa8c">    kubernetes.io/cluster-service: &#34;true&#34;
+</span><span style="color:#f1fa8c">    addonmanager.kubernetes.io/mode: Reconcile
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  updateStrategy:
+</span><span style="color:#f1fa8c">    rollingUpdate:
+</span><span style="color:#f1fa8c">      maxUnavailable: 10%
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      k8s-app: node-local-dns
+</span><span style="color:#f1fa8c">  template:
+</span><span style="color:#f1fa8c">    metadata:
+</span><span style="color:#f1fa8c">      labels:
+</span><span style="color:#f1fa8c">        k8s-app: node-local-dns
+</span><span style="color:#f1fa8c">      annotations:
+</span><span style="color:#f1fa8c">        prometheus.io/port: &#34;9253&#34;
+</span><span style="color:#f1fa8c">        prometheus.io/scrape: &#34;true&#34;
+</span><span style="color:#f1fa8c">    spec:
+</span><span style="color:#f1fa8c">      priorityClassName: system-node-critical
+</span><span style="color:#f1fa8c">      serviceAccountName: node-local-dns
+</span><span style="color:#f1fa8c">      hostNetwork: true
+</span><span style="color:#f1fa8c">      dnsPolicy: Default  # 不使用cluster DNS解析.
+</span><span style="color:#f1fa8c">      tolerations:
+</span><span style="color:#f1fa8c">      - key: &#34;CriticalAddonsOnly&#34;
+</span><span style="color:#f1fa8c">        operator: &#34;Exists&#34;
+</span><span style="color:#f1fa8c">      - effect: &#34;NoExecute&#34;
+</span><span style="color:#f1fa8c">        operator: &#34;Exists&#34;
+</span><span style="color:#f1fa8c">      - effect: &#34;NoSchedule&#34;
+</span><span style="color:#f1fa8c">        operator: &#34;Exists&#34;
+</span><span style="color:#f1fa8c">      containers:
+</span><span style="color:#f1fa8c">      - name: node-cache
+</span><span style="color:#f1fa8c">        image: k8s.gcr.io/dns/k8s-dns-node-cache:1.17.0
+</span><span style="color:#f1fa8c">        resources:
+</span><span style="color:#f1fa8c">          requests:
+</span><span style="color:#f1fa8c">            cpu: 25m
+</span><span style="color:#f1fa8c">            memory: 5Mi
+</span><span style="color:#f1fa8c">        args: [ &#34;-localip&#34;, &#34;$localDnsIp,$upstreanDnsIp&#34;, &#34;-conf&#34;, &#34;/etc/Corefile&#34;, &#34;-upstreamsvc&#34;, &#34;kube-dns-upstream&#34; ]
+</span><span style="color:#f1fa8c">        securityContext:
+</span><span style="color:#f1fa8c">          privileged: true
+</span><span style="color:#f1fa8c">        ports:
+</span><span style="color:#f1fa8c">        - containerPort: 53
+</span><span style="color:#f1fa8c">          name: dns
+</span><span style="color:#f1fa8c">          protocol: UDP
+</span><span style="color:#f1fa8c">        - containerPort: 53
+</span><span style="color:#f1fa8c">          name: dns-tcp
+</span><span style="color:#f1fa8c">          protocol: TCP
+</span><span style="color:#f1fa8c">        - containerPort: 9253
+</span><span style="color:#f1fa8c">          name: metrics
+</span><span style="color:#f1fa8c">          protocol: TCP
+</span><span style="color:#f1fa8c">        livenessProbe:
+</span><span style="color:#f1fa8c">          httpGet:
+</span><span style="color:#f1fa8c">            host: $localDnsIp
+</span><span style="color:#f1fa8c">            path: /health
+</span><span style="color:#f1fa8c">            port: 8080
+</span><span style="color:#f1fa8c">          initialDelaySeconds: 60
+</span><span style="color:#f1fa8c">          timeoutSeconds: 5
+</span><span style="color:#f1fa8c">        volumeMounts:
+</span><span style="color:#f1fa8c">        - mountPath: /run/xtables.lock
+</span><span style="color:#f1fa8c">          name: xtables-lock
+</span><span style="color:#f1fa8c">          readOnly: false
+</span><span style="color:#f1fa8c">        - name: config-volume
+</span><span style="color:#f1fa8c">          mountPath: /etc/coredns
+</span><span style="color:#f1fa8c">        - name: kube-dns-config
+</span><span style="color:#f1fa8c">          mountPath: /etc/kube-dns
+</span><span style="color:#f1fa8c">      volumes:
+</span><span style="color:#f1fa8c">      - name: xtables-lock
+</span><span style="color:#f1fa8c">        hostPath:
+</span><span style="color:#f1fa8c">          path: /run/xtables.lock
+</span><span style="color:#f1fa8c">          type: FileOrCreate
+</span><span style="color:#f1fa8c">      - name: kube-dns-config
+</span><span style="color:#f1fa8c">        configMap:
+</span><span style="color:#f1fa8c">          name: kube-dns
+</span><span style="color:#f1fa8c">          optional: true
+</span><span style="color:#f1fa8c">      - name: config-volume
+</span><span style="color:#f1fa8c">        configMap:
+</span><span style="color:#f1fa8c">          name: node-local-dns
+</span><span style="color:#f1fa8c">          items:
+</span><span style="color:#f1fa8c">            - key: Corefile
+</span><span style="color:#f1fa8c">              path: Corefile.base
+</span><span style="color:#f1fa8c">---
+</span><span style="color:#f1fa8c"># A headless service is a service with a service IP but instead of load-balancing it will return the IPs of our associated Pods.
+</span><span style="color:#f1fa8c"># We use this to expose metrics to Prometheus.
+</span><span style="color:#f1fa8c">apiVersion: v1
+</span><span style="color:#f1fa8c">kind: Service
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  annotations:
+</span><span style="color:#f1fa8c">    prometheus.io/port: &#34;9253&#34;
+</span><span style="color:#f1fa8c">    prometheus.io/scrape: &#34;true&#34;
+</span><span style="color:#f1fa8c">  labels:
+</span><span style="color:#f1fa8c">    k8s-app: node-local-dns
+</span><span style="color:#f1fa8c">  name: node-local-dns
+</span><span style="color:#f1fa8c">  namespace: kube-system
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  clusterIP: None
+</span><span style="color:#f1fa8c">  ports:
+</span><span style="color:#f1fa8c">    - name: metrics
+</span><span style="color:#f1fa8c">      port: 9253
+</span><span style="color:#f1fa8c">      targetPort: 9253
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    k8s-app: node-local-dns
+</span><span style="color:#f1fa8c">
+</span><span style="color:#f1fa8c">END</span>
+<span style="color:#ff79c6">)</span>
+
+<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$yaml</span><span style="color:#f1fa8c">&#34;</span> &gt; nodelocaldns-ds.yaml
+kubectl create -f nodelocaldns-ds.yaml
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sh install-nodelocaldns.sh
+</code></pre></div><p>此时已经完成了nodelocaldns的部署。通过查看日志会发现nodelocaldns已经正常参与解析。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl logs node-local-dns-8x3o5 -n kube-system
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:41770 - <span style="color:#bd93f9">20309</span> <span style="color:#f1fa8c">&#34;A IN www.baidu.com.default.svc.cluster.local. udp 57 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">150</span> 0.002431573s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:41770 - <span style="color:#bd93f9">20650</span> <span style="color:#f1fa8c">&#34;AAAA IN www.baidu.com.default.svc.cluster.local. udp 57 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">150</span> 0.002533574s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:58177 - <span style="color:#bd93f9">3493</span> <span style="color:#f1fa8c">&#34;AAAA IN www.baidu.com.svc.cluster.local. udp 49 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">142</span> 0.001126744s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:58177 - <span style="color:#bd93f9">3232</span> <span style="color:#f1fa8c">&#34;A IN www.baidu.com.svc.cluster.local. udp 49 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">142</span> 0.001107933s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:51909 - <span style="color:#bd93f9">6463</span> <span style="color:#f1fa8c">&#34;AAAA IN www.baidu.com.cluster.local. udp 45 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">138</span> 0.001056258s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:51909 - <span style="color:#bd93f9">6211</span> <span style="color:#f1fa8c">&#34;A IN www.baidu.com.cluster.local. udp 45 false 512&#34;</span> NXDOMAIN qr,aa,rd <span style="color:#bd93f9">138</span> 0.00108577s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:60395 - <span style="color:#bd93f9">42129</span> <span style="color:#f1fa8c">&#34;A IN www.baidu.com.ap-southeast-1.compute.internal. udp 63 false 512&#34;</span> NXDOMAIN qr,rd,ra <span style="color:#bd93f9">186</span> 0.003109582s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:60395 - <span style="color:#bd93f9">42426</span> <span style="color:#f1fa8c">&#34;AAAA IN www.baidu.com.ap-southeast-1.compute.internal. udp 63 false 512&#34;</span> NXDOMAIN qr,rd,ra <span style="color:#bd93f9">186</span> 0.004827469s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:54473 - <span style="color:#bd93f9">18014</span> <span style="color:#f1fa8c">&#34;A IN www.baidu.com. udp 31 false 512&#34;</span> NOERROR qr,rd,ra <span style="color:#bd93f9">181</span> 0.001185881s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:54473 - <span style="color:#bd93f9">18249</span> <span style="color:#f1fa8c">&#34;AAAA IN www.baidu.com. udp 31 false 512&#34;</span> NOERROR qr,rd,ra <span style="color:#bd93f9">207</span> 0.001337411s
+</code></pre></div><h2 id="解析search域影响查询响应">解析search域影响查询响应</h2>
+<p>目前，在ClusterFirst模式下，2次（1次IPv4，1次IPv6）集群外部域名查询产生10次（5次IPv4，5次IPv6）查询请求。（这里有aws域名，如果裸机部署k8s集群将为4次）例如，解析www.baidu.com域名，会先分别携带三个集群主域名后缀，产生八次无效查询请求，这样会导致集群DNS QPS放大四倍，影响性能。</p>
+<h3 id="查看pod里search域">查看pod里search域</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> test-pod -- cat /etc/resolv.conf
+nameserver 10.100.0.10
+search default.svc.cluster.local svc.cluster.local cluster.local ap-southeast-1.compute.internal
+options ndots:5
+</code></pre></div><p>通过在pod中<code>cat /etc/resolv.conf</code>可以发现有4个search域，默认还有一个.，故有5次，<code>nodots:5</code>表示要经过5次查询。这将严重影响dns解析效果。
+我们将Pod的search改为(这里直接在pod里修改，后续通过后可通过dnsConfig修改)：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">search default.svc.cluster.local
+options ndots:2
+</code></pre></div><p>deployment的dnsConfig配置:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  <span style="color:#ff79c6">dnsPolicy</span>: None
+  <span style="color:#ff79c6">dnsConfig</span>:
+    <span style="color:#ff79c6">searches</span>:
+    - svc.cluster.local
+    <span style="color:#ff79c6">options</span>:
+    - <span style="color:#ff79c6">name</span>: ndots
+      <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
+</code></pre></div><p>在配置生效后，我们验证：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -s -IL https://www.ipyker.com <span style="color:#ff79c6">&amp;&amp;</span> curl -s -IL helloworld.hw:5000/hello
+HTTP/2 <span style="color:#bd93f9">200</span>
+Content-Length: <span style="color:#bd93f9">60</span>
+...
+
+$ kubectl logs node-local-dns-8x3o5 -n kube-system
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:47392 - <span style="color:#bd93f9">38526</span> <span style="color:#f1fa8c">&#34;AAAA IN www.ipyker.com. udp 32 false 512&#34;</span> NOERROR qr,rd,ra <span style="color:#bd93f9">76</span> 0.000413585s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:47392 - <span style="color:#bd93f9">38307</span> <span style="color:#f1fa8c">&#34;A IN www.ipyker.com. udp 32 false 512&#34;</span> NOERROR qr,rd,ra <span style="color:#bd93f9">204</span> 0.000494763s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:37782 - <span style="color:#bd93f9">60764</span> <span style="color:#f1fa8c">&#34;AAAA IN helloworld.hw.svc.cluster.local. udp 49 false 512&#34;</span> NOERROR qr,aa,rd <span style="color:#bd93f9">142</span> 0.000102695s
+<span style="color:#ff79c6">[</span>INFO<span style="color:#ff79c6">]</span> 172.31.3.217:37782 - <span style="color:#bd93f9">60470</span> <span style="color:#f1fa8c">&#34;A IN helloworld.hw.svc.cluster.local. udp 49 false 512&#34;</span> NOERROR qr,aa,rd <span style="color:#bd93f9">96</span> 0.000050289s
+</code></pre></div><p>可以发现不管内外地址，请求一次就命中。</p>
+<h2 id="为什么ndots5会对应用程序性能产生负面影响">为什么ndots：5会对应用程序性能产生负面影响？</h2>
+<p>如果您的应用程序进行了大量外部流量，则对于已建立的每个TCP连接（或更具体而言，对于每个已解析的名称），它将在正确解析名称之前发出5个DNS查询，因为它将通过4个DNS查询。 首先是本地搜索域，最后将发布绝对名称解析查询。</p>
+<h2 id="dns缓存命中和延时">DNS缓存命中和延时</h2>
+<p>首先，我们环境当前存在部分延迟，所以本次直接演示：</p>
+<ul>
+<li>准备一个curl请求文本</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">cat &gt; reuqest-time.txt <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">time_namelookup: %{time_namelookup}\n
+</span><span style="color:#f1fa8c">time_connect: %{time_connect}\n
+</span><span style="color:#f1fa8c">time_appconnect: %{time_appconnect}\n
+</span><span style="color:#f1fa8c">time_redirect: %{time_redirect}\n
+</span><span style="color:#f1fa8c">time_pretransfer: %{time_pretransfer}\n
+</span><span style="color:#f1fa8c">time_starttransfer: %{time_starttransfer}\n
+</span><span style="color:#f1fa8c">----------\n
+</span><span style="color:#f1fa8c">time_total: %{time_total}\n
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><ul>
+<li>测试请求,可多执行几次
+发现dns解析非常耗时，216ms，总耗时才391ms。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -w <span style="color:#f1fa8c">&#34;@reuqest-time.txt&#34;</span> -o /dev/null -s -L helloworld.hw:5000/hello
+time_namelookup: 0.216190
+time_connect: 0.217433
+time_appconnect: 0.233136
+time_redirect: 0.000000
+time_pretransfer: 0.233272
+time_starttransfer: 0.390998
+----------
+time_total: 0.391311
+</code></pre></div><p>修改Coredns的配置文件，修改缓存和ttl时间</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">apiVersion</span>: v1
+<span style="color:#ff79c6">kind</span>: ConfigMap
+<span style="color:#ff79c6">metadata</span>:
+  <span style="color:#ff79c6">name</span>: coredns
+  <span style="color:#ff79c6">namespace</span>: kube-system
+<span style="color:#ff79c6">data</span>:
+  <span style="color:#ff79c6">Corefile</span>: |<span style="color:#f1fa8c">
+</span><span style="color:#f1fa8c">    .:53 {
+</span><span style="color:#f1fa8c">        log
+</span><span style="color:#f1fa8c">        errors
+</span><span style="color:#f1fa8c">        health
+</span><span style="color:#f1fa8c">        ready
+</span><span style="color:#f1fa8c">        kubernetes cluster.local in-addr.arpa ip6.arpa {
+</span><span style="color:#f1fa8c">           pods insecure
+</span><span style="color:#f1fa8c">           upstream
+</span><span style="color:#f1fa8c">           fallthrough in-addr.arpa ip6.arpa
+</span><span style="color:#f1fa8c">           ttl 300  # 修改ttl的值为300秒，默认为5秒
+</span><span style="color:#f1fa8c">        }
+</span><span style="color:#f1fa8c">        prometheus :9153
+</span><span style="color:#f1fa8c">        forward . /etc/resolv.conf
+</span><span style="color:#f1fa8c">        cache {
+</span><span style="color:#f1fa8c">                success 9984 3600 300
+</span><span style="color:#f1fa8c">                denial 9984 5
+</span><span style="color:#f1fa8c">        }        
+</span><span style="color:#f1fa8c">        loop
+</span><span style="color:#f1fa8c">        reload
+</span><span style="color:#f1fa8c">        loadbalance  # 随机A，AAAA，MX解析的顺序
+</span><span style="color:#f1fa8c">    }</span>    
+</code></pre></div><p><a href="https://coredns.io/plugins/cache/">插件cache</a>的语法为<code>cache [TTL] [ZONES...]</code>，最大TTL，单位为秒。如果未指定，则使用最大TTL, NOERROR响应为3600，不存在响应为1800。
+例如：设置TTL为300：意思为缓存300将缓存记录长达300秒。ZONES应该缓存的区域。如果为空，则使用配置块中的区域。（一个<code>xxx:53{}</code>块即为一个zone）
+<code>cache {success CAPACITY TTL MINTTL}</code>: 覆盖用于缓存成功响应的设置。 “CAPACITY”表示开始驱逐（随机）之前缓存的最大数据包数。 TTL会覆盖缓存的最大TTL。 MINTTL会覆盖缓存的最小TTL（默认值为5），这对于将查询限制到后端很有用。
+<code>cache {denial CAPACITY TTL MINTTL}</code>: 覆盖用于缓存拒绝存在响应的设置。 “CAPACITY”表示开始驱逐（LRU）之前缓存的最大数据包数。 TTL会覆盖缓存的最大TTL。 MINTTL会覆盖缓存的最小TTL（默认值为5），这对于将查询限制到后端很有用。 第三类（错误），但是这些响应永远不会被缓存。
+<a href="https://coredns.io/plugins/kubernetes/">插件Kubernetes</a> TTL字段允许您为响应设置自定义TTL。 默认值为5秒。 允许的最小TTL为0秒，最大为3600秒。 将TTL设置为0将防止记录被缓存。</p>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/2021-04-19-k8s_node_upgrade/" data-toggle="tooltip" data-placement="top" title="Kubernetes集群升级etcd故障处理">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
