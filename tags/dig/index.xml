@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>dig on 云原生与运维</title>
+    <link>https://www.ipyker.com/tags/dig/</link>
+    <description>Recent content in dig on 云原生与运维</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 18 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/dig/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>调试工具dig你怎么用</title>
+      <link>https://www.ipyker.com/post/network-dig/</link>
+      <pubDate>Sun, 18 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/network-dig/</guid>
+      <description>关于dig dig（域信息搜索器）是一个在类Unix命令行模式下查询DNS包括NS记录，A记录，MX记录等相关信息的工具。dig命令是一个用于</description>
+    </item>
+    
+  </channel>
+</rss>

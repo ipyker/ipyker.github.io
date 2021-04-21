@@ -6,7 +6,25 @@
     <description>Recent content in Tags on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 16 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 18 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>dig</title>
+      <link>https://www.ipyker.com/tags/dig/</link>
+      <pubDate>Sun, 18 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/tags/dig/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>network</title>
+      <link>https://www.ipyker.com/tags/network/</link>
+      <pubDate>Sun, 18 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/tags/network/</guid>
+      <description></description>
+    </item>
+    
     <item>
       <title>Kubernetes</title>
       <link>https://www.ipyker.com/tags/kubernetes/</link>

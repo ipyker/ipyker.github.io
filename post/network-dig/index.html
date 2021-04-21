@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="调试工具dig你怎么用" />
+    <meta property="og:title" content="调试工具dig你怎么用" />
+    <meta property="twitter:title" content="调试工具dig你怎么用" />
+    
+
+    
+    <meta name="description" content="通常网络运维人员利用 dig 作为 DNS 问题的故障诊断，因为它灵活性好、易用、输出清晰！">
+    <meta property="og:description" content="通常网络运维人员利用 dig 作为 DNS 问题的故障诊断，因为它灵活性好、易用、输出清晰！" />
+    <meta property="twitter:description" content="通常网络运维人员利用 dig 作为 DNS 问题的故障诊断，因为它灵活性好、易用、输出清晰！" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>调试工具dig你怎么用-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/network-dig/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://imgs.aixifan.com/o_1drk42kf813fg81q1s978493gk7.jpeg')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/network" title="network">
+                            network
+                        </a>
+                        
+                        <a class="tag" href="/tags/dig" title="dig">
+                            dig
+                        </a>
+                        
+                    </div>
+                    <h1>调试工具dig你怎么用</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Sunday, April 18, 2021
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#关于dig">关于dig</a></li>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#dig-输出内容">dig 输出内容</a>
+      <ul>
+        <li><a href="#flags-qr-aa-rd-ra解析">flags: qr aa rd ra解析</a></li>
+      </ul>
+    </li>
+    <li><a href="#dns-排错标志">DNS 排错标志：</a></li>
+    <li><a href="#其他dig命令">其他dig命令</a>
+      <ul>
+        <li><a href="#srv记录">SRV记录</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                
+                <h1 id="关于dig">关于dig</h1>
+<p>dig（域信息搜索器）是一个在类Unix命令行模式下查询DNS包括NS记录，A记录，MX记录等相关信息的工具。dig命令是一个用于询问 DNS 域名服务器的灵活的工具。它执行 DNS 搜索，显示从受请求的域名服务器返回的答复。多数 DNS 管理员利用 dig 作为 DNS 问题的故障诊断，因为它灵活性好、易用、输出清晰。虽然通常情况下 dig 使用命令行参数，但它也可以按批处理模式从文件读取搜索请求。不同于早期版本，dig 的 BIND9 实现允许从命令行发出多个查询。除非被告知请求特定域名服务器，dig 将尝试 /etc/resolv.conf 中列举的所有服务器。当未指定任何命令行参数或选项时，dig 将对“.”（根）执行 NS 查询。</p>
+<h1 id="安装">安装</h1>
+<ul>
+<li>CentOS/RedHat</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ yum install -y bind-utils
+</code></pre></div><ul>
+<li>Ubuntu/Debian</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ apt-get install dnsutils -y
+</code></pre></div><h1 id="dig-输出内容">dig 输出内容</h1>
+<blockquote>
+<p>本文将介绍一些常见的dig命令和字段说明
+下面是一条不带任何参数的dig命令，返回结果如下。</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig www.ipyker.com
+; &lt;&lt;&gt;&gt; DiG 9.14.12 &lt;&lt;&gt;&gt; www.ipyker.com
+;; global options: +cmd
+<span style="color:#6272a4"># 上面部分是一些有关于它的版本信息(version 9.2.3)和全局的设置选项，如果+nocmd在命令行下是第一个参数的话，那么这部分输出可以通过加+nocmd的方式查询出来。</span>
+
+;; Got answer:
+;; -&gt;&gt;HEADER<span style="color:#f1fa8c">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#bd93f9">28762</span>
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: <span style="color:#bd93f9">1</span>
+<span style="color:#6272a4"># 这部分告诉我们一些从DNS返回的技术信息，这段信息可以用选项 +[no]comments来控制显示，但是小心，禁止掉comments也可能关闭一些其它的选项。 </span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: <span style="color:#bd93f9">4096</span>
+; COOKIE: 788331a8f781cb91 <span style="color:#ff79c6">(</span>echoed<span style="color:#ff79c6">)</span>
+;; QUESTION SECTION:
+;www.ipyker.com.			IN	A
+<span style="color:#6272a4"># 这部分告诉我们，Dig显示出我们查询的输出，默认的查询是查询A记录，你可以显示或者禁止掉这些用+[no]question选项</span>
+
+;; ANSWER SECTION:
+www.ipyker.com.		28	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	28	IN	A	185.199.108.153
+ipyker.github.io.	28	IN	A	185.199.110.153
+ipyker.github.io.	28	IN	A	185.199.111.153
+ipyker.github.io.	28	IN	A	185.199.109.153
+<span style="color:#6272a4"># 这部分告诉我们，得到的查询结果。www.ipyker.com的地址是ipyker.github.io的别名，而ipyker.github.io的地址有4个，我不知道为什么你们更喜欢过滤掉这些输出，但是你可以显示或者禁止掉这些+[no]answer选项。</span>
+
+;; Query time: <span style="color:#bd93f9">129</span> msec  <span style="color:#6272a4"># 第一次查询需要请求根DNS，故有耗时，后续的查询将为0或者1，表示读取缓存。</span>
+;; SERVER: 172.20.0.10#53<span style="color:#ff79c6">(</span>172.20.0.10<span style="color:#ff79c6">)</span>
+;; WHEN: Wed Apr <span style="color:#bd93f9">21</span> 15:44:29 UTC <span style="color:#bd93f9">2021</span>
+;; MSG SIZE  rcvd: <span style="color:#bd93f9">227</span>
+<span style="color:#6272a4"># 最后一段默认输出包含了查询的统计数据，可以用+[no]stats显示或者禁止掉这些。</span>
+</code></pre></div><p>带上<code>+nocmd</code> 参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +nocmd www.ipyker.com <span style="color:#6272a4"># +nocmd效果</span>
+;; Got answer:
+;; -&gt;&gt;HEADER<span style="color:#f1fa8c">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#bd93f9">46160</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: <span style="color:#bd93f9">1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: <span style="color:#bd93f9">4096</span>
+;; QUESTION SECTION:
+;www.ipyker.com.			IN	A
+
+;; ANSWER SECTION:
+www.ipyker.com.		30	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	30	IN	A	185.199.111.153
+ipyker.github.io.	30	IN	A	185.199.108.153
+ipyker.github.io.	30	IN	A	185.199.110.153
+ipyker.github.io.	30	IN	A	185.199.109.153
+
+;; Query time: <span style="color:#bd93f9">0</span> msec
+;; SERVER: 172.20.0.10#53<span style="color:#ff79c6">(</span>172.20.0.10<span style="color:#ff79c6">)</span>
+;; WHEN: Wed Apr <span style="color:#bd93f9">21</span> 15:50:11 UTC <span style="color:#bd93f9">2021</span>
+;; MSG SIZE  rcvd: <span style="color:#bd93f9">215</span>
+</code></pre></div><p>带上<code>+nocomments</code> 参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +nocmd +nocomments www.ipyker.com         <span style="color:#6272a4"># +nocmd、+nocomments效果</span>
+;www.ipyker.com.			IN	A
+www.ipyker.com.		24	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	24	IN	A	185.199.111.153
+ipyker.github.io.	24	IN	A	185.199.108.153
+ipyker.github.io.	24	IN	A	185.199.110.153
+ipyker.github.io.	24	IN	A	185.199.109.153
+;; Query time: <span style="color:#bd93f9">0</span> msec
+;; SERVER: 172.20.0.10#53<span style="color:#ff79c6">(</span>172.20.0.10<span style="color:#ff79c6">)</span>
+;; WHEN: Wed Apr <span style="color:#bd93f9">21</span> 15:50:17 UTC <span style="color:#bd93f9">2021</span>
+;; MSG SIZE  rcvd: <span style="color:#bd93f9">227</span>
+</code></pre></div><p>带上<code>+noquestion</code>参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +noquestion www.ipyker.com <span style="color:#6272a4"># 带上+noquestion选项效果</span>
+
+; &lt;&lt;&gt;&gt; DiG 9.14.12 &lt;&lt;&gt;&gt; +noquestion www.ipyker.com
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style="color:#f1fa8c">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#bd93f9">19721</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: <span style="color:#bd93f9">1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: <span style="color:#bd93f9">4096</span>
+;; ANSWER SECTION:
+www.ipyker.com.		30	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	30	IN	A	185.199.109.153
+ipyker.github.io.	30	IN	A	185.199.110.153
+ipyker.github.io.	30	IN	A	185.199.108.153
+ipyker.github.io.	30	IN	A	185.199.111.153
+
+;; Query time: <span style="color:#bd93f9">0</span> msec
+;; SERVER: 172.20.0.10#53<span style="color:#ff79c6">(</span>172.20.0.10<span style="color:#ff79c6">)</span>
+;; WHEN: Wed Apr <span style="color:#bd93f9">21</span> 15:54:26 UTC <span style="color:#bd93f9">2021</span>
+;; MSG SIZE  rcvd: <span style="color:#bd93f9">215</span>
+</code></pre></div><p>带上<code>+noanswer</code> 参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +noanswer www.ipyker.com  <span style="color:#6272a4"># 带上+noanswer选项效果</span>
+; &lt;&lt;&gt;&gt; DiG 9.14.12 &lt;&lt;&gt;&gt; +noanswer www.ipyker.com
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style="color:#f1fa8c">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#bd93f9">8357</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: <span style="color:#bd93f9">1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: <span style="color:#bd93f9">4096</span>
+;; QUESTION SECTION:
+;www.ipyker.com.			IN	A
+
+;; Query time: <span style="color:#bd93f9">0</span> msec
+;; SERVER: 172.20.0.10#53<span style="color:#ff79c6">(</span>172.20.0.10<span style="color:#ff79c6">)</span>
+;; WHEN: Wed Apr <span style="color:#bd93f9">21</span> 15:57:49 UTC <span style="color:#bd93f9">2021</span>
+;; MSG SIZE  rcvd: <span style="color:#bd93f9">215</span>
+</code></pre></div><p>带上<code>+nostats</code> 参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +nostats www.ipyker.com  <span style="color:#6272a4"># 带上+nostats选项效果</span>
+; &lt;&lt;&gt;&gt; DiG 9.14.12 &lt;&lt;&gt;&gt; +nostats www.ipyker.com
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style="color:#f1fa8c">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#bd93f9">27472</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: <span style="color:#bd93f9">1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: <span style="color:#bd93f9">4096</span>
+;; QUESTION SECTION:
+;www.ipyker.com.			IN	A
+
+;; ANSWER SECTION:
+www.ipyker.com.		30	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	30	IN	A	185.199.108.153
+ipyker.github.io.	30	IN	A	185.199.111.153
+ipyker.github.io.	30	IN	A	185.199.110.153
+ipyker.github.io.	30	IN	A	185.199.109.153
+</code></pre></div><h2 id="flags-qr-aa-rd-ra解析">flags: qr aa rd ra解析</h2>
+<ul>
+<li><code>qr</code>: 指定此消息是查询（0）还是响应（1）</li>
+<li><code>aa</code>: 本次查询来自权威DNS源，如果这里的标志部分不包含aa标志，则表示结果来自缓存，而不是直接来自权威来源。</li>
+<li><code>rd</code>: 递归查询，默认情况下，除非您设置+norecurse命令行标志，否则dig将发送递归查询（在查询标头中设置了RD）。</li>
+<li><code>ra</code>: 递归查询支持的诊断测试,如果服务器支持递归查询，则响应将在响应头中设置“可用递归” RA位。</li>
+<li><code>ad</code>: 已认证的数据(仅适用于DNSSEC;指示数据已经过验证)</li>
+<li><code>cd</code>: 检查已禁用（仅DNSSEC；在接收服务器上禁用检查）</li>
+</ul>
+<h1 id="dns-排错标志">DNS 排错标志：</h1>
+<p>Response code 它显示来自 DNS 查找的详细信息 , 其中包括为什么查询失败 :</p>
+<ul>
+<li><code>NOERROR(0)</code> : 查询成功</li>
+<li><code>NXDOMAIN(3)</code> : DNS 服务器提示不存在这样的名称</li>
+<li><code>SERVFAIL(2)</code> : DNS 服务器停机或 DNSSEC 响应验证失败</li>
+<li><code>REFUSED(5)</code> : DNS 服务器拒绝回答 ( 也许是出于访问控制原因 )</li>
+<li><code>FORMERR(1)</code> : 格式错误（无法理解查询）</li>
+<li><code>NOTIMPL(4)</code> : 没有实现的查询</li>
+</ul>
+<blockquote>
+<p>DNSSEC通过为DNS中的数据添加数字签名信息，使得客户端在得到应答消息后可以通过检查此签名信，使得客户端在得到应答消息后可以通过检查此签名信息来判断应答数据是否权威和真实，从而为 从而为DNS数据提供数据来源验证和数据完整性检验，可以防止针对 可以防止针对DNS的相关攻击.</p>
+</blockquote>
+<h1 id="其他dig命令">其他dig命令</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig @8.8.8.8 www.ipyker.com  <span style="color:#6272a4"># 指定8.8.8.8的dns来解析www.ipyker.com</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig www.ipyker.com A +noall +answer <span style="color:#6272a4"># 指定要查询的A记录 </span>
+; &lt;&lt;&gt;&gt; DiG 9.11.4-P2-RedHat-9.11.4-26.P2.amzn2.2 &lt;&lt;&gt;&gt; www.ipyker.com +noall +answer
+;; global options: +cmd
+www.ipyker.com.		282	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	282	IN	A	185.199.111.153
+ipyker.github.io.	282	IN	A	185.199.110.153
+ipyker.github.io.	282	IN	A	185.199.109.153
+ipyker.github.io.	282	IN	A	185.199.108.153
+
+$ dig www.ipyker.com CNAME +noall +answer <span style="color:#6272a4"># 指定要查询的CNAME记录 ,其他的还有MX,NS,TXT,AAAA等</span>
+
+; &lt;&lt;&gt;&gt; DiG 9.11.4-P2-RedHat-9.11.4-26.P2.amzn2.2 &lt;&lt;&gt;&gt; www.ipyker.com CNAME +noall +answer
+;; global options: +cmd
+www.ipyker.com.		271	IN	CNAME	ipyker.github.io.
+</code></pre></div><p>如果你要查询的域允许转发，你也可以查询到相关的信息，比如DNS记录在internet上的生存周期，但是，现在只有很少的DNS允许无限制转发。
+我们怎样查询？获得精简答案？当我们需要一个快速回答时，+short选项是你最好的朋友:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig www.ipyker.com +noall +answer +short
+ipyker.github.io.
+185.199.108.153
+185.199.110.153
+185.199.111.153
+185.199.109.153
+</code></pre></div><p>下面这段只返回解析记录，和直接执行nslookup很像。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig +nocmd www.ipyker.com A +noall +answer
+www.ipyker.com.		199	IN	CNAME	ipyker.github.io.
+ipyker.github.io.	199	IN	A	185.199.109.153
+ipyker.github.io.	199	IN	A	185.199.111.153
+ipyker.github.io.	199	IN	A	185.199.110.153
+ipyker.github.io.	199	IN	A	185.199.108.153
+</code></pre></div><p>反解析，PTR解析，可以用<code>-x的选项</code>查找IP地址的主机名。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig -x 185.199.111.153 +short <span style="color:#6272a4"># 通过+short直接获取值</span>
+cdn-185-199-111-153.github.com.
+</code></pre></div><h2 id="srv记录">SRV记录</h2>
+<p><code>SRV记录(服务定位资源记录)</code>是域名系统中用于指定服务器提供服务的位置（如主机名和端口）数据。它在DNS记录中的是个新鲜面孔，在RFC2082中才对SRV记录进行了定义，因此有很多老旧服务器并不支持SRV记录。SRV在RFC2082定义的标准记录格式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">_Service._Proto.Name TTL Class SRV Priority Weight Port Target
+</code></pre></div><p>例如解析一条thanos-receiver的SRV记录</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dig srv _grpc._tcp.thanos-receiver.monitor.svc.cluster.local
+...
+;; ANSWER SECTION:
+_grpc._tcp.thanos-receiver.monitor.svc.cluster.local. 6	IN SRV <span style="color:#bd93f9">0</span> <span style="color:#bd93f9">33</span> <span style="color:#bd93f9">10901</span> 10-59-155-238.thanos-receiver.monitor.svc.cluster.local.
+_grpc._tcp.thanos-receiver.monitor.svc.cluster.local. 6	IN SRV <span style="color:#bd93f9">0</span> <span style="color:#bd93f9">33</span> <span style="color:#bd93f9">10901</span> 10-59-42-68.thanos-receiver.monitor.svc.cluster.local.
+_grpc._tcp.thanos-receiver.monitor.svc.cluster.local. 6	IN SRV <span style="color:#bd93f9">0</span> <span style="color:#bd93f9">33</span> <span style="color:#bd93f9">10901</span> 10-59-48-162.thanos-receiver.monitor.svc.cluster.local.
+
+;; ADDITIONAL SECTION:
+10-59-48-162.thanos-receiver.monitor.svc.cluster.local.	<span style="color:#bd93f9">6</span> IN A 10.59.48.162
+10-59-42-68.thanos-receiver.monitor.svc.cluster.local. <span style="color:#bd93f9">6</span> IN A 10.59.42.68
+10-59-155-238.thanos-receiver.monitor.svc.cluster.local. <span style="color:#bd93f9">6</span> IN A	10.59.155.238
+...
+</code></pre></div><p>可以看到这条SRV记录里面，分别返回了三个服务的IP地址、端口、以及服务的优先级和权重.</p>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/k8s-coredns-nodelocaldns/" data-toggle="tooltip" data-placement="top" title="Kubernetes DNS查询和优化">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
