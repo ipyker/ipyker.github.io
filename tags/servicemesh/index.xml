@@ -8,6 +8,15 @@
     <language>en-us</language>
     <lastBuildDate>Tue, 20 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/tags/servicemesh/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Authentication Policy控制集群mTLS双向认证</title>
+      <link>https://www.ipyker.com/post/istiod-authentication-policy/</link>
+      <pubDate>Tue, 20 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/istiod-authentication-policy/</guid>
+      <description>本任务涵盖了启用、配置和使用Istio authentication policies时可能需要执行的主要活动。在身份验证概述中了解有关底层概念的更多信息。 开始之前 了解I</description>
+    </item>
+    
+    <item>
       <title>部署Istio多控制平面集群</title>
       <link>https://www.ipyker.com/post/istiod-mutli-primary/</link>
       <pubDate>Tue, 20 Apr 2021 14:02:14 +0000</pubDate>

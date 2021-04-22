@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="Authentication Policy控制集群mTLS双向认证" />
+    <meta property="og:title" content="Authentication Policy控制集群mTLS双向认证" />
+    <meta property="twitter:title" content="Authentication Policy控制集群mTLS双向认证" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>Authentication Policy控制集群mTLS双向认证-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/istiod-authentication-policy/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fblog%2F201403%2F21%2F20140321142916_8swA2.jpeg&refer=http%3A%2F%2Fb-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621708677&t=51ad672cba01e06dd81de171b91b7f1c')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/istio" title="Istio">
+                            Istio
+                        </a>
+                        
+                        <a class="tag" href="/tags/servicemesh" title="ServiceMesh">
+                            ServiceMesh
+                        </a>
+                        
+                    </div>
+                    <h1>Authentication Policy控制集群mTLS双向认证</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Tuesday, April 20, 2021
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#开始之前">开始之前</a></li>
+    <li><a href="#开始">开始</a></li>
+    <li><a href="#自动mtls">自动mTLS</a></li>
+    <li><a href="#在strict模式下全局启用istio-mutual-tls">在STRICT模式下全局启用Istio mutual TLS</a></li>
+    <li><a href="#清除-part1">清除 Part1</a></li>
+    <li><a href="#对每个namespace或工作负载启用mtls">对每个namespace或工作负载启用mTLS</a>
+      <ul>
+        <li><a href="#namespace范围的policy">namespace范围的policy</a></li>
+        <li><a href="#每个工作负载启用mtls">每个工作负载启用mTLS</a></li>
+        <li><a href="#策略优先级">策略优先级</a></li>
+      </ul>
+    </li>
+    <li><a href="#清除part2">清除Part2</a></li>
+    <li><a href="#最终用户身份验证">最终用户身份验证</a>
+      <ul>
+        <li><a href="#需要有一个效令牌">需要有一个效令牌</a></li>
+        <li><a href="#要求每个路径都有有效的令牌">要求每个路径都有有效的令牌</a></li>
+      </ul>
+    </li>
+    <li><a href="#清除part3">清除Part3</a></li>
+  </ul>
+</nav>
+                
+                <p>本任务涵盖了启用、配置和使用Istio authentication policies时可能需要执行的主要活动。在<a href="https://istio.io/latest/docs/concepts/security/#authentication">身份验证概述</a>中了解有关底层概念的更多信息。</p>
+<h1 id="开始之前">开始之前</h1>
+<ul>
+<li>了解Istio <a href="https://istio.io/latest/docs/concepts/security/#authentication-policies">authentication policy</a>和相关的<a href="https://istio.io/latest/docs/concepts/security/#mutual-tls-authentication">mutual TLS authentication</a>概念。</li>
+<li>使用默认配置文件在Kubernetes集群上安装Istio，如<a href="https://istio.io/latest/docs/setup/getting-started">安装步骤</a>所述。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ istioctl install --set <span style="color:#8be9fd;font-style:italic">profile</span><span style="color:#ff79c6">=</span>default
+</code></pre></div><h1 id="开始">开始</h1>
+<p>我们的示例用到两个命名空间 foo 和 bar，以及两个服务 httpbin 和 sleep，这两个服务都带有 Envoy sidecar proxy 一起运行。我们也会用到两个运行在 legacy 命名空间下不带 sidecar 的 httpbin 和 sleep 实例。如果您想要使用相同的示例尝试任务，执行如下命令</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">kubectl create ns foo
+kubectl apply -f &lt;<span style="color:#ff79c6">(</span>istioctl kube-inject -f samples/httpbin/httpbin.yaml<span style="color:#ff79c6">)</span> -n foo
+kubectl apply -f &lt;<span style="color:#ff79c6">(</span>istioctl kube-inject -f samples/sleep/sleep.yaml<span style="color:#ff79c6">)</span> -n foo
+kubectl create ns bar
+kubectl apply -f &lt;<span style="color:#ff79c6">(</span>istioctl kube-inject -f samples/httpbin/httpbin.yaml<span style="color:#ff79c6">)</span> -n bar
+kubectl apply -f &lt;<span style="color:#ff79c6">(</span>istioctl kube-inject -f samples/sleep/sleep.yaml<span style="color:#ff79c6">)</span> -n bar
+kubectl create ns legacy
+kubectl apply -f samples/httpbin/httpbin.yaml -n legacy
+kubectl apply -f samples/sleep/sleep.yaml -n legacy
+</code></pre></div><p>您可以通过从名称空间foo、bar或legacy中的任何sleep pod发送一个带有curl的HTTP请求到httpbin来验证设置。httpbin.foo, httpbin.bar或者httpbin.legacy。使用HTTP代码200，所有请求都应该成功。
+例如，下面是sleep.bar请求httpbin.foo的测试验证：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n bar -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n bar -- curl http://httpbin.foo:8000/ip -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+</code></pre></div><p>这个一行命令方便地遍历所有可达性组合:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">for</span> from in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> <span style="color:#ff79c6">for</span> to in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -- curl -s <span style="color:#f1fa8c">&#34;http://httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">:8000/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;sleep.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> to httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">: %{http_code}\n&#34;</span>; <span style="color:#ff79c6">done</span>; <span style="color:#ff79c6">done</span>
+sleep.foo to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.legacy: <span style="color:#bd93f9">200</span>
+</code></pre></div><p>使用如下命令验证系统中没有peer authentication policy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl get peerauthentication --all-namespaces
+No resources found
+</code></pre></div><p>最后(但并非最不重要)，确认没有应用于示例服务的destination rules。您可以通过检查现有destination rules的host: value来做到这一点，并确保它们不匹配。例如:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl get destinationrules.networking.istio.io --all-namespaces -o yaml | grep <span style="color:#f1fa8c">&#34;host:&#34;</span>
+</code></pre></div><blockquote>
+<p>根据Istio的版本，您可能会看到其他主机的destination rules。但是，在foo、bar和legacy名称空间中应该没有host，也不应该有匹配所有的通配符<code>*</code></p>
+</blockquote>
+<h1 id="自动mtls">自动mTLS</h1>
+<p>默认情况下，Istio关联迁移到Istio代理的服务工作负载，并在配置client proxy自动向这些工作负载发送mTLS通信流，并在没有sidecars的情况下向工作负载发送纯文本(plain text)通信流。
+因此，<code>具有代理的工作负载之间的所有通信都使用相互TLS，而无需您做任何事情</code>。例如，从请求到httpbin/header的响应。当使用相互TLS时，代理将X-Forwarded-Client-Cert头注入到向后端发送的上游请求。报头的存在就是使用了mTLS的证据。例如:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n foo -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n foo -- curl -s http://httpbin.foo:8000/headers -s | grep X-Forwarded-Client-Cert | sed <span style="color:#f1fa8c">&#39;s/Hash=[a-z0-9]*;/Hash=&lt;redacted&gt;;/&#39;</span>
+    <span style="color:#f1fa8c">&#34;X-Forwarded-Client-Cert&#34;</span>: <span style="color:#f1fa8c">&#34;By=spiffe://cluster.local/ns/foo/sa/httpbin;Hash=&lt;redacted&gt;;Subject=\&#34;\&#34;;URI=spiffe://cluster.local/ns/foo/sa/sleep&#34;</span>
+</code></pre></div><p>当服务没有sidecar时，X-Forwarded-Client-Cert头不在那里，这意味着请求是纯文本的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n foo -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n foo -- curl http://httpbin.legacy:8000/headers -s | grep X-Forwarded-Client-Cert
+</code></pre></div><h1 id="在strict模式下全局启用istio-mutual-tls">在STRICT模式下全局启用Istio mutual TLS</h1>
+<p>虽然Istio自动将代理和工作负载之间的所有通信升级为mTLS，但工作负载仍然可以接收纯文本通信。为了防止整个mesh的非双向TLS通信，可以设置全mesh-wide对端认证策略，mutual TLS模式设置为STRICT。mesh-wide peer authentication policy不应该有selecter，必须应用在根命名空间中，例如:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;default&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;istio-system&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><blockquote>
+<p>该示例假定istio-system是根名称空间。如果在安装过程中使用了不同的值，请使用所使用的值替换istio-system。</p>
+</blockquote>
+<p>此peer authentication policy将工作负载配置为只接受使用TLS加密的请求。因为它没有为selector字段指定值，所以该策略应用于mesh中的所有工作负载,例如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#ff79c6">for</span> from in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> <span style="color:#ff79c6">for</span> to in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -- curl <span style="color:#f1fa8c">&#34;http://httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">:8000/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;sleep.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> to httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">: %{http_code}\n&#34;</span>; <span style="color:#ff79c6">done</span>; <span style="color:#ff79c6">done</span>
+sleep.foo to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.foo: <span style="color:#bd93f9">000</span>  <span style="color:#6272a4"># 失败</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">000</span>  <span style="color:#6272a4"># 失败</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.legacy: <span style="color:#bd93f9">200</span>
+</code></pre></div><p>您会看到请求仍然成功，除了那些来自没有sidecar(sleep)的客户机的请求。sleep.legacy请求到有sidecar代理的服务httpbin。foo或httpbin.bar。这是预期的，因为现在严格要求相互TLS，但没有sidecar的工作负载无法遵守。</p>
+<blockquote>
+<p>早在Istio1.1时，此请求无解。后面版本可通过tls.mode: DISABLE实现访问。</p>
+</blockquote>
+<h1 id="清除-part1">清除 Part1</h1>
+<p>删除会话中添加的全局peer authentication policy和destination rules:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl delete peerauthentication -n istio-system default
+</code></pre></div><h1 id="对每个namespace或工作负载启用mtls">对每个namespace或工作负载启用mTLS</h1>
+<h2 id="namespace范围的policy">namespace范围的policy</h2>
+<p>要为特定名称空间内的所有工作负载更改mTLS，请使用名称空间范围的策略。策略的规范与mesh-wide策略的规范相同，但是要在元数据下指定它应用的名称空间。例如，以下对等身份验证策略为foo命名空间启用严格的mTLS:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;default&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;foo&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>由于此策略仅应用于名称空间foo中的工作负载，因此您应该只看到没有sidecar的服务(sleep.legacy)到httpbin.foo的请求开始失败。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#ff79c6">for</span> from in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> <span style="color:#ff79c6">for</span> to in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -- curl <span style="color:#f1fa8c">&#34;http://httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">:8000/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;sleep.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> to httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">: %{http_code}\n&#34;</span>; <span style="color:#ff79c6">done</span>; <span style="color:#ff79c6">done</span>
+sleep.foo to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.foo: <span style="color:#bd93f9">000</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.legacy: <span style="color:#bd93f9">200</span>
+</code></pre></div><h2 id="每个工作负载启用mtls">每个工作负载启用mTLS</h2>
+<p>要为特定工作负载设置peer authentication policy，您必须配置selector部分，并指定匹配所需工作负载的label。但是，Istio不能将出站mTLS通信流的工作负载级策略聚合到服务。配置destination rules来管理该行为。
+例如，下面的为httpbin.bar负载启用peer authentication policy和destination rules:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n bar -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;httpbin&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;bar&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      app: httpbin
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+---
+cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n bar -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;networking.istio.io/v1alpha3&#34;
+</span><span style="color:#f1fa8c">kind: &#34;DestinationRule&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;httpbin&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  host: &#34;httpbin.bar.svc.cluster.local&#34;
+</span><span style="color:#f1fa8c">  trafficPolicy:
+</span><span style="color:#f1fa8c">    tls:
+</span><span style="color:#f1fa8c">      mode: ISTIO_MUTUAL
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>再次运行探测命令。不出所料，请求从 sleep.legacy到httpbin.bar失败也是因为同样的原因。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#ff79c6">for</span> from in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> <span style="color:#ff79c6">for</span> to in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -- curl <span style="color:#f1fa8c">&#34;http://httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">:8000/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;sleep.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> to httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">: %{http_code}\n&#34;</span>; <span style="color:#ff79c6">done</span>; <span style="color:#ff79c6">done</span>
+sleep.foo to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.foo: <span style="color:#bd93f9">000</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">000</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.legacy: <span style="color:#bd93f9">200</span>
+...
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">000</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+</code></pre></div><p>要细化每个端口的相互TLS设置，您必须配置portLevelMtls部分。例如，以下对端认证策略要求在除80端口外的所有端口上相互TLS:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n bar -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;httpbin&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;bar&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      app: httpbin
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">  portLevelMtls:
+</span><span style="color:#f1fa8c">    80:
+</span><span style="color:#f1fa8c">      mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>和前面一样，你还需要一个目标规则:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n bar -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;networking.istio.io/v1alpha3&#34;
+</span><span style="color:#f1fa8c">kind: &#34;DestinationRule&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;httpbin&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  host: httpbin.bar.svc.cluster.local
+</span><span style="color:#f1fa8c">  trafficPolicy:
+</span><span style="color:#f1fa8c">    tls:
+</span><span style="color:#f1fa8c">      mode: ISTIO_MUTUAL
+</span><span style="color:#f1fa8c">    portLevelSettings:
+</span><span style="color:#f1fa8c">    - port:
+</span><span style="color:#f1fa8c">        number: 8000
+</span><span style="color:#f1fa8c">      tls:
+</span><span style="color:#f1fa8c">        mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><ul>
+<li>PeerAuthentication中的端口值是container的端口。DestinationRule的值是service的端口。</li>
+<li>如果端口绑定到服务则只能使用portLevelMtls。否则Istio会忽略它.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#ff79c6">for</span> from in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> <span style="color:#ff79c6">for</span> to in <span style="color:#f1fa8c">&#34;foo&#34;</span> <span style="color:#f1fa8c">&#34;bar&#34;</span> <span style="color:#f1fa8c">&#34;legacy&#34;</span>; <span style="color:#ff79c6">do</span> kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n <span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span> -- curl <span style="color:#f1fa8c">&#34;http://httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">:8000/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;sleep.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">from</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> to httpbin.</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">to</span><span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">: %{http_code}\n&#34;</span>; <span style="color:#ff79c6">done</span>; <span style="color:#ff79c6">done</span>
+sleep.foo to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.foo to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.foo: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.bar to httpbin.legacy: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.foo: <span style="color:#bd93f9">000</span>
+<span style="color:#8be9fd;font-style:italic">command</span> terminated with <span style="color:#8be9fd;font-style:italic">exit</span> code <span style="color:#bd93f9">56</span>
+sleep.legacy to httpbin.bar: <span style="color:#bd93f9">200</span>
+sleep.legacy to httpbin.legacy: <span style="color:#bd93f9">200</span>
+</code></pre></div><h2 id="策略优先级">策略优先级</h2>
+<p>定义在工作负载的对等身份验证策略优先于名称空间范围的策略。如果您添加一个策略来禁用httpbin的mTLS，您可以测试此行为。例如Foo工作负载。注意，您已经创建了一个名称空间范围的策略，该策略为名称空间foo中的所有服务启用相互TLS，并观察来自sleep.legacy请求httpbin.foo 正在失败（见上文）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n foo -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;overwrite-example&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;foo&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      app: httpbin
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+---
+cat <span style="color:#f1fa8c">&lt;&lt;EOF | kubectl apply -n foo -f -
+</span><span style="color:#f1fa8c">apiVersion: &#34;networking.istio.io/v1alpha3&#34;
+</span><span style="color:#f1fa8c">kind: &#34;DestinationRule&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;overwrite-example&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  host: httpbin.foo.svc.cluster.local
+</span><span style="color:#f1fa8c">  trafficPolicy:
+</span><span style="color:#f1fa8c">    tls:
+</span><span style="color:#f1fa8c">      mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>重新运行 sleep.legacy 中的请求后，您应该会再次看到一个成功的返回代码(200) ，确认特定于服务的策略重写了名称空间范围的策略。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ $ kubectl <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>kubectl get pod -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep -n legacy -o <span style="color:#8be9fd;font-style:italic">jsonpath</span><span style="color:#ff79c6">={</span>.items..metadata.name<span style="color:#ff79c6">}</span><span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> -c sleep -n legacy -- curl http://httpbin.foo:8000/ip -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">200</span>
+</code></pre></div><h1 id="清除part2">清除Part2</h1>
+<p>删除上面步骤中创建的策略和目标规则:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl delete peerauthentication default overwrite-example -n foo
+$ kubectl delete peerauthentication httpbin -n bar
+$ kubectl delete destinationrules overwrite-example -n foo
+$ kubectl delete destinationrules httpbin -n bar
+</code></pre></div><h1 id="最终用户身份验证">最终用户身份验证</h1>
+<p>要试验这个特性，您需要一个有效的JWT。JWT必须与您希望用于演示的JWKS端点相对应。本教程使用Istio代码库中的测试令牌JWT测试和JWKS端点。此外，为了方便起见，请将httpbin.foo设置ingressgateway（有关更多详细信息，请参阅<a href="https://istio.io/latest/docs/tasks/traffic-management/ingress/">ingressgateway任务</a>）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: networking.istio.io/v1alpha3
+</span><span style="color:#f1fa8c">kind: Gateway
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: httpbin-gateway
+</span><span style="color:#f1fa8c">  namespace: foo
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    istio: ingressgateway # use Istio default gateway implementation
+</span><span style="color:#f1fa8c">  servers:
+</span><span style="color:#f1fa8c">  - port:
+</span><span style="color:#f1fa8c">      number: 80
+</span><span style="color:#f1fa8c">      name: http
+</span><span style="color:#f1fa8c">      protocol: HTTP
+</span><span style="color:#f1fa8c">    hosts:
+</span><span style="color:#f1fa8c">    - &#34;*&#34;
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: networking.istio.io/v1alpha3
+</span><span style="color:#f1fa8c">kind: VirtualService
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: httpbin
+</span><span style="color:#f1fa8c">  namespace: foo
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  hosts:
+</span><span style="color:#f1fa8c">  - &#34;*&#34;
+</span><span style="color:#f1fa8c">  gateways:
+</span><span style="color:#f1fa8c">  - httpbin-gateway
+</span><span style="color:#f1fa8c">  http:
+</span><span style="color:#f1fa8c">  - route:
+</span><span style="color:#f1fa8c">    - destination:
+</span><span style="color:#f1fa8c">        port:
+</span><span style="color:#f1fa8c">          number: 8000
+</span><span style="color:#f1fa8c">        host: httpbin.foo.svc.cluster.local
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>按照确定入口IP和端口的说明定义<code>INGRESS_HOST</code>和<code>INGRESS_PORT</code>环境变量。然后运行一个测试查询:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">200</span>
+</code></pre></div><p>现在，添加一个请求身份验证策略，它要求终端用户JWT作为ingressgateway。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;RequestAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;jwt-example&#34;
+</span><span style="color:#f1fa8c">  namespace: istio-system
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      istio: ingressgateway
+</span><span style="color:#f1fa8c">  jwtRules:
+</span><span style="color:#f1fa8c">  - issuer: &#34;testing@secure.istio.io&#34;
+</span><span style="color:#f1fa8c">    jwksUri: &#34;https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json&#34;
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>将策略应用于它选择的工作负载的名称空间，在本例中是ingressgateway。您需要指定的名称空间是isio-system。如果您在授权头中提供了一个令牌(隐式默认位置)，Istio将使用公钥集验证令牌，并在持牌人令牌无效时拒绝请求。但是，没有令牌的请求将被接受。要观察这种行为，请在不使用令牌、使用错误令牌和使用有效令牌的情况下重试请求:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">200</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl --header <span style="color:#f1fa8c">&#34;Authorization: Bearer deadbeef&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">401</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#8be9fd;font-style:italic">TOKEN</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>curl https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt -s<span style="color:#ff79c6">)</span>
+curl --header <span style="color:#f1fa8c">&#34;Authorization: Bearer </span><span style="color:#8be9fd;font-style:italic">$TOKEN</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">200</span>
+</code></pre></div><p>要观察JWT验证的其他方面，可以使用gen-jwt.py脚本生成新的令牌，以使用不同的发行者、受众、到期日期等进行测试。该脚本可以从Istio存储库下载:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ wget --no-verbose https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/gen-jwt.py
+</code></pre></div><p>你还需要钥匙。pem文件:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ wget --no-verbose https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/key.pem
+</code></pre></div><blockquote>
+<p>如果您还没有在系统上安装<a href="https://pypi.org/project/jwcrypto">jwcrypto库</a>，请下载它。
+JWT认证具有60秒的时钟偏差，这意味着JWT令牌将比其配置的nbf早60秒生效，并在其配置的exp后60秒仍然有效。
+例如，下面的命令创建一个在5秒内过期的令牌。如您所见，Istio首先成功地使用该令牌验证请求，但在65秒后拒绝它们:</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#8be9fd;font-style:italic">TOKEN</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>python3 ./gen-jwt.py ./key.pem --expire 5<span style="color:#ff79c6">)</span>
+$ <span style="color:#ff79c6">for</span> i in <span style="color:#ff79c6">$(</span>seq <span style="color:#bd93f9">1</span> 10<span style="color:#ff79c6">)</span>; <span style="color:#ff79c6">do</span> curl --header <span style="color:#f1fa8c">&#34;Authorization: Bearer </span><span style="color:#8be9fd;font-style:italic">$TOKEN</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>; sleep 10; <span style="color:#ff79c6">done</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">200</span>
+<span style="color:#bd93f9">401</span>
+<span style="color:#bd93f9">401</span>
+<span style="color:#bd93f9">401</span>
+</code></pre></div><p>也可以将JWT策略添加到入口网关(例如service istio-ingressgateway.istio-system.svc.cluster.local)。这通常用于为绑定到网关的所有服务(而不是单个服务)定义JWT策略。</p>
+<h2 id="需要有一个效令牌">需要有一个效令牌</h2>
+<p>要拒绝没有有效令牌的请求，请添加一个授权策略，其中包含一个规则，该规则为没有请求主体的请求指定拒绝操作，在下面的示例中显示为notRequestPrincipals:[“*”]。请求主体仅在提供有效的JWT令牌时可用。因此，该规则拒绝没有有效令牌的请求。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;AuthorizationPolicy&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;frontend-ingress&#34;
+</span><span style="color:#f1fa8c">  namespace: istio-system
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      istio: ingressgateway
+</span><span style="color:#f1fa8c">  action: DENY
+</span><span style="color:#f1fa8c">  rules:
+</span><span style="color:#f1fa8c">  - from:
+</span><span style="color:#f1fa8c">    - source:
+</span><span style="color:#f1fa8c">        notRequestPrincipals: [&#34;*&#34;]
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>在不使用令牌的情况下重试请求。请求现在失败，错误代码为403:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">403</span>
+</code></pre></div><h2 id="要求每个路径都有有效的令牌">要求每个路径都有有效的令牌</h2>
+<p>要用每个主机、路径或方法的令牌要求来细化授权，请将授权策略更改为只需要在/headers上使用JWT。当此授权规则生效时，请求$INGRESS_HOST:$INGRESS_PORT/headers失败，错误码为403。对所有其他路径的请求都成功，例如$INGRESS_HOST:$INGRESS_PORT/ip。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">kubectl apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;AuthorizationPolicy&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;frontend-ingress&#34;
+</span><span style="color:#f1fa8c">  namespace: istio-system
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  selector:
+</span><span style="color:#f1fa8c">    matchLabels:
+</span><span style="color:#f1fa8c">      istio: ingressgateway
+</span><span style="color:#f1fa8c">  action: DENY
+</span><span style="color:#f1fa8c">  rules:
+</span><span style="color:#f1fa8c">  - from:
+</span><span style="color:#f1fa8c">    - source:
+</span><span style="color:#f1fa8c">        notRequestPrincipals: [&#34;*&#34;]
+</span><span style="color:#f1fa8c">    to:
+</span><span style="color:#f1fa8c">    - operation:
+</span><span style="color:#f1fa8c">        paths: [&#34;/headers&#34;]
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/headers&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">403</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$INGRESS_HOST</span><span style="color:#f1fa8c">:</span><span style="color:#8be9fd;font-style:italic">$INGRESS_PORT</span><span style="color:#f1fa8c">/ip&#34;</span> -s -o /dev/null -w <span style="color:#f1fa8c">&#34;%{http_code}\n&#34;</span>
+<span style="color:#bd93f9">200</span>
+</code></pre></div><h1 id="清除part3">清除Part3</h1>
+<p>删除authentication policy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl -n istio-system delete requestauthentication jwt-example
+</code></pre></div><p>删除authorization policy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl -n istio-system delete authorizationpolicy frontend-ingress
+</code></pre></div><p>删除令牌生成器脚本和密钥文件:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ rm -f ./gen-jwt.py ./key.pem
+</code></pre></div><p>如果您不打算研究任何后续任务，您可以通过删除测试名称空间来删除所有资源:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl delete ns foo bar legacy
+</code></pre></div><blockquote>
+<p>本文来至官方：<a href="https://istio.io/latest/docs/tasks/security/authentication/authn-policy/#end-user-authentication">https://istio.io/latest/docs/tasks/security/authentication/authn-policy/#end-user-authentication</a></p>
+</blockquote>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/istiod-mutli-primary/" data-toggle="tooltip" data-placement="top" title="部署Istio多控制平面集群">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/istio" title="istio">
+                            istio
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/servicemesh" title="servicemesh">
+                            servicemesh
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
