@@ -245,7 +245,7 @@
                 
                 <h1 id="写在开头">写在开头</h1>
 <p>在istio1.8之前，istio集群模式需要依赖都需要依赖ingressgateway的支持，并且在不同群集上运行的Pod通过Istio Ingress网关进行通信。请注意，每个Istio控制平面仅与在同一群集上运行的Kubernetes API服务器通信，而且依赖istiocoredns来解析.global的地址。在istio1.8之后，istiocoredns完全废弃，并由istio-proxy的sidecar完成dns解析。以及在同网络不同集群下不需要ingressgateway的支持，k8s的svc能够自动发现两个集群的pod ip，且格式保持和单集群一致，为：svcname.namespace.svc.cluster.local。并不像istio1.8之前用global做后缀。</p>
-<p>下面说说目前最新istio 1.9.3的<code>同网络多k8s集群多主istio控制面的联邦</code>。</p>
+<p>下面说说目前最新istio 1.9.2的<code>同网络多k8s集群多主istio控制面的联邦</code>。</p>
 <h1 id="多主模式架构">多主模式架构</h1>
 <p>
   <img src="/img/istiod-mutli-primary.png" alt="">
@@ -483,7 +483,10 @@ $ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-clus
           <span style="color:#ff79c6">logging</span>: <span style="color:#ff79c6">false</span>
           <span style="color:#ff79c6">monitoring</span>: <span style="color:#ff79c6">false</span>
           <span style="color:#ff79c6">topology</span>: <span style="color:#ff79c6">false</span>
-</code></pre></div><p>安装Isitod</p>
+</code></pre></div><blockquote>
+<p>更多参数参考：<a href="https://github.com/istio/istio/blob/master/manifests/charts/istio-control/istio-discovery/values.yaml">https://github.com/istio/istio/blob/master/manifests/charts/istio-control/istio-discovery/values.yaml</a>
+安装Isitod</p>
+</blockquote>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 install -f istio-cluster-001-iop.yaml
 $ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 install -f istio-cluster-002-iop.yaml
 </code></pre></div><h1 id="启用跨集群发现endpoint">启用跨集群发现EndPoint</h1>
