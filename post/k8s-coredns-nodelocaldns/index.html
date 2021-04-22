@@ -343,7 +343,7 @@
 </span><span style="color:#f1fa8c">    cluster.local:53 {
 </span><span style="color:#f1fa8c">        errors
 </span><span style="color:#f1fa8c">        cache {
-</span><span style="color:#f1fa8c">                success 9984 3600
+</span><span style="color:#f1fa8c">                success 9984 300
 </span><span style="color:#f1fa8c">                denial 9984 5
 </span><span style="color:#f1fa8c">        }
 </span><span style="color:#f1fa8c">        reload
@@ -534,7 +534,7 @@ options ndots:2
     - <span style="color:#ff79c6">name</span>: ndots
       <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;2&#34;</span>
     - <span style="color:#ff79c6">name</span>: single-request-reopen
-    - <span style="color:#ff79c6">timeout</span>:
+    - <span style="color:#ff79c6">name</span>: timeout
       <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;1&#34;</span>
 </code></pre></div><p>在配置生效后，我们验证：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -s -IL https://www.ipyker.com <span style="color:#ff79c6">&amp;&amp;</span> curl -s -IL helloworld.hw:5000/hello
@@ -607,7 +607,7 @@ time_total: 0.391311
 </span><span style="color:#f1fa8c">        prometheus :9153
 </span><span style="color:#f1fa8c">        forward . /etc/resolv.conf
 </span><span style="color:#f1fa8c">        cache {
-</span><span style="color:#f1fa8c">                success 9984 3600 300
+</span><span style="color:#f1fa8c">                success 9984 300 120
 </span><span style="color:#f1fa8c">                denial 9984 5
 </span><span style="color:#f1fa8c">        }        
 </span><span style="color:#f1fa8c">        loop
