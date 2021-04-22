@@ -6,7 +6,16 @@
     <description>Recent content in Tech on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 18 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/tech/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 20 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/tech/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>部署Istio多控制平面集群</title>
+      <link>https://www.ipyker.com/post/istiod-mutli-primary/</link>
+      <pubDate>Tue, 20 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/istiod-mutli-primary/</guid>
+      <description>写在开头 在istio1.8之前，istio集群模式需要依赖都需要依赖ingressgateway的支持，并且在不同群集上运行的Pod通过Is</description>
+    </item>
+    
     <item>
       <title>调试工具dig你怎么用</title>
       <link>https://www.ipyker.com/post/network-dig/</link>

@@ -185,6 +185,27 @@
             
 
 <div class="post-preview">
+    <a href="https://www.ipyker.com/post/2021-04-19-k8s_node_upgrade/">
+        <h2 class="post-title">
+            Kubernetes集群升级etcd故障处理
+        </h2>
+	
+        <div class="post-content-preview">
+	
+            1. 升级 将需要的升级到指定版本的k8s镜像传送到相应节点上，然后在任何一个master节点运行下面的命令即可完成升级。 $ yum install -y kubeadm=1.18.3 kubectl=1.18.3 kubelet=1.18.3 $ kubeadm config images list
+       
+        </div>
+    </a>
+    <p class="post-meta">
+    Posted by      &#34;Pyker&#34; Saturday, September 28, 2019
+    
+    
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
     <a href="https://www.ipyker.com/post/2021-04-19-k8s_zookeeper_cluster/">
         <h2 class="post-title">
             Kubernetes安装zookeeper 3.5.5
@@ -268,27 +289,6 @@
 </div>
 <hr>
 
-<div class="post-preview">
-    <a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">
-        <h2 class="post-title">
-            使用 PodDisruptionBudgets 避免 Kubernetes 集群中断 （四）
-        </h2>
-	
-        <div class="post-content-preview">
-	
-            使用 Kubernetes 中的中断预算来阻塞 Pod 驱逐 这是实现 Kubernetes 集群零停机时间更新旅程的第 4 部分。在前两篇文章（第二部分和第三部分中，我们重点介绍了如何优雅关闭集群
-       
-        </div>
-    </a>
-    <p class="post-meta">
-    Posted by      &#34;Pyker&#34; Monday, January 1, 0001
-    
-    
-    </p>
-
-</div>
-<hr>
-
 
             
 
@@ -334,6 +334,8 @@
                
             
                
+            
+               
                     <a href="/tags/kubernetes" title="kubernetes">
                         kubernetes
                     </a>
@@ -353,6 +355,8 @@
                     <a href="/tags/pod" title="pod">
                         pod
                     </a>
+               
+            
                
             
                

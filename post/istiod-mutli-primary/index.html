@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="部署Istio多控制平面集群" />
+    <meta property="og:title" content="部署Istio多控制平面集群" />
+    <meta property="twitter:title" content="部署Istio多控制平面集群" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>部署Istio多控制平面集群-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/istiod-mutli-primary/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fattach.bbs.miui.com%2Fforum%2F201312%2F31%2F111859myvyiivetyftfz2n.jpg&refer=http%3A%2F%2Fattach.bbs.miui.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621697034&t=7a8cac450766520f210ac243618e9f2c')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/istio" title="Istio">
+                            Istio
+                        </a>
+                        
+                        <a class="tag" href="/tags/servicemesh" title="ServiceMesh">
+                            ServiceMesh
+                        </a>
+                        
+                    </div>
+                    <h1>部署Istio多控制平面集群</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Tuesday, April 20, 2021
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#写在开头">写在开头</a></li>
+    <li><a href="#多主模式架构">多主模式架构</a></li>
+    <li><a href="#架构解析">架构解析</a></li>
+    <li><a href="#部署前准备">部署前准备</a></li>
+    <li><a href="#部署证书">部署证书</a></li>
+    <li><a href="#安装istiod">安装Istiod</a></li>
+    <li><a href="#启用跨集群发现endpoint">启用跨集群发现EndPoint</a></li>
+    <li><a href="#启用双向mtls">启用双向mTLS</a></li>
+    <li><a href="#验证跨集群访问">验证跨集群访问</a>
+      <ul>
+        <li><a href="#部署helloworld">部署helloworld</a></li>
+        <li><a href="#部署sleep">部署sleep</a></li>
+        <li><a href="#确认pod-svc正常">确认pod svc正常</a></li>
+        <li><a href="#进入sleep容器验证">进入sleep容器验证</a></li>
+      </ul>
+    </li>
+    <li><a href="#中间涉及到的验证">中间涉及到的验证</a>
+      <ul>
+        <li><a href="#mtls证书验证">mtls证书验证</a></li>
+        <li><a href="#endpoints验证">endpoints验证</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                
+                <h1 id="写在开头">写在开头</h1>
+<p>在istio1.8之前，istio集群模式需要依赖都需要依赖ingressgateway的支持，并且在不同群集上运行的Pod通过Istio Ingress网关进行通信。请注意，每个Istio控制平面仅与在同一群集上运行的Kubernetes API服务器通信，而且依赖istiocoredns来解析.global的地址。在istio1.8之后，istiocoredns完全废弃，并由istio-proxy的sidecar完成dns解析。以及在同网络不同集群下不需要ingressgateway的支持，k8s的svc能够自动发现两个集群的pod ip，且格式保持和单集群一致，为：svcname.namespace.svc.cluster.local。并不像istio1.8之前用global做后缀。</p>
+<p>下面说说目前最新istio 1.9.3的<code>同网络多k8s集群多主istio控制面的联邦</code>。</p>
+<h1 id="多主模式架构">多主模式架构</h1>
+<p>
+  <img src="/img/istiod-mutli-primary.png" alt="">
+
+
+由于同网络（VPC），所以不同集群上运行的Pod可以直接通信，并且Istio控制平面现在可以发现其他集群上运行的工作负载（通过访问远程Kubernetes API服务器）。</p>
+<blockquote>
+<p>更多架构参考官方：https://istio.io/latest/zh/docs/setup/install/multicluster/</p>
+</blockquote>
+<h1 id="架构解析">架构解析</h1>
+<ul>
+<li>Istiod使用共同ROOT CA签发的中间证书来安装Istiod，从而确认彼此之间的信任关系。</li>
+<li>每个集群生成istiod对apiserver的kubeconfig文件，使用secret封装起来，然后在对方集群apply，从而使其能watch对方集群资源。</li>
+<li>配置PeerAuthentication，从而启用Istio的mTLS。因为跨集群必须mTLS通信。</li>
+<li>部署服务后，通过svcname即可发现所有的endpoints对象，从而达到跨集群调度。</li>
+</ul>
+<blockquote>
+<p>⚠️  必须保证同一个网络下，且PodIP互相通信！</p>
+</blockquote>
+<h1 id="部署前准备">部署前准备</h1>
+<ul>
+<li>准备好2个Kubernetes集群，注意两个集群的apiserver需要能互相访问</li>
+<li>准备好一份CA证书，可以是openssl自签发的。</li>
+<li>本文准备了两个Kubernetes集群，名称分别为<code>istio-cluster-001</code>和<code>istio-cluster-002</code></li>
+</ul>
+<blockquote>
+<p>当前操作主机拥有两个集群的权限，因此有些公共资源部分省去了copy后在apply的步骤。</p>
+</blockquote>
+<h1 id="部署证书">部署证书</h1>
+<p>在安装istio之前，需要先部署一个cacerts的secret资源。可以使用openssl生成ca证书和中间证书。然后部署到k8s，包括所有输入文件<code>ca-cert.pem</code>，<code>ca-key.pem</code>， <code>root-cert.pem</code>和<code>cert-chain.pem</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># istio-cluster-001 部署证书</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 create namespace istio-system
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 create secret generic cacerts -n istio-system <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-key.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./root-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./cert-chain.pem
+
+<span style="color:#6272a4"># istio-cluster-002 部署证书</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 create namespace istio-system
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 create secret generic cacerts -n istio-system <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-key.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./root-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./cert-chain.pem
+</code></pre></div><blockquote>
+<p>此证书已经生成好的，两个集群可以用同一个中间证书，也可以用ROOT CA分别签发两个集群的证书，详细步骤参考：<a href="https://istio.io/latest/docs/tasks/security/cert-management/plugin-ca-cert/">https://istio.io/latest/docs/tasks/security/cert-management/plugin-ca-cert/</a></p>
+</blockquote>
+<h1 id="安装istiod">安装Istiod</h1>
+<p>准备IstioOperator安装配置文件，集群1和集群2参考下面配置，注意注释部分中的解释。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">apiVersion</span>: install.istio.io/v1alpha1
+<span style="color:#ff79c6">kind</span>: IstioOperator
+<span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">components</span>:
+    <span style="color:#ff79c6">base</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">cni</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">egressGateways</span>:
+    - <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">name</span>: istio-egressgateway
+    <span style="color:#ff79c6">ingressGateways</span>:
+    - <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 30m
+            <span style="color:#ff79c6">memory</span>: 100Mi
+      <span style="color:#ff79c6">name</span>: istio-ingressgateway
+    <span style="color:#ff79c6">istiodRemote</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">pilot</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 30m
+            <span style="color:#ff79c6">memory</span>: 100Mi
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: PILOT_TRACE_SAMPLING          <span style="color:#6272a4"># trace采样精度，最小单位0.1,不需要链路跟踪可以关掉优化性能</span>
+          <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;80&#34;</span>
+        <span style="color:#ff79c6">hpaSpec</span>:
+          <span style="color:#ff79c6">maxReplicas</span>: <span style="color:#bd93f9">5</span>
+          <span style="color:#ff79c6">minReplicas</span>: <span style="color:#bd93f9">1</span>
+  <span style="color:#ff79c6">hub</span>: docker.io/istio
+  <span style="color:#ff79c6">meshConfig</span>:
+    <span style="color:#ff79c6">accessLogFile</span>: /dev/stdout
+    <span style="color:#ff79c6">defaultConfig</span>:
+      <span style="color:#ff79c6">proxyMetadata</span>:                           <span style="color:#6272a4"># 此段配置envoy dns解析</span>
+        <span style="color:#ff79c6">ISTIO_META_DNS_CAPTURE</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+        <span style="color:#ff79c6">ISTIO_META_PROXY_XDS_VIA_AGENT</span>: <span style="color:#f1fa8c">&#34;true&#34;</span>
+    <span style="color:#ff79c6">enablePrometheusMerge</span>: <span style="color:#ff79c6">true</span>
+  <span style="color:#ff79c6">profile</span>: default
+  <span style="color:#ff79c6">tag</span>: <span style="color:#bd93f9">1.9.2</span>
+  <span style="color:#ff79c6">values</span>:
+    <span style="color:#ff79c6">base</span>:
+      <span style="color:#ff79c6">enableCRDTemplates</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">validationURL</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#ff79c6">gateways</span>:
+      <span style="color:#ff79c6">istio-egressgateway</span>:
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">env</span>: {}
+        <span style="color:#ff79c6">name</span>: istio-egressgateway
+        <span style="color:#ff79c6">secretVolumes</span>:
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/egressgateway-certs
+          <span style="color:#ff79c6">name</span>: egressgateway-certs
+          <span style="color:#ff79c6">secretName</span>: istio-egressgateway-certs
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/egressgateway-ca-certs
+          <span style="color:#ff79c6">name</span>: egressgateway-ca-certs
+          <span style="color:#ff79c6">secretName</span>: istio-egressgateway-ca-certs
+        <span style="color:#ff79c6">type</span>: ClusterIP
+        <span style="color:#ff79c6">zvpn</span>: {}
+      <span style="color:#ff79c6">istio-ingressgateway</span>:
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">env</span>: {}
+        <span style="color:#ff79c6">name</span>: istio-ingressgateway
+        <span style="color:#ff79c6">secretVolumes</span>:
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/ingressgateway-certs
+          <span style="color:#ff79c6">name</span>: ingressgateway-certs
+          <span style="color:#ff79c6">secretName</span>: istio-ingressgateway-certs
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/ingressgateway-ca-certs
+          <span style="color:#ff79c6">name</span>: ingressgateway-ca-certs
+          <span style="color:#ff79c6">secretName</span>: istio-ingressgateway-ca-certs
+        <span style="color:#ff79c6">type</span>: LoadBalancer
+        <span style="color:#ff79c6">zvpn</span>: {}
+    <span style="color:#ff79c6">global</span>:
+      <span style="color:#ff79c6">arch</span>:
+        <span style="color:#ff79c6">amd64</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">ppc64le</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">s390x</span>: <span style="color:#bd93f9">2</span>
+      <span style="color:#ff79c6">configValidation</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">podDNSSearchNamespaces</span>:            <span style="color:#6272a4"># 不同网络下多集群使用。本环境用不上</span>
+        - global
+        - <span style="color:#f1fa8c">&#34;{{ valueOrDefault .DeploymentMeta.Namespace \&#34;default\&#34; }}.global&#34;</span>
+      <span style="color:#ff79c6">defaultNodeSelector</span>: {}
+      <span style="color:#ff79c6">defaultPodDisruptionBudget</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">defaultResources</span>:
+        <span style="color:#ff79c6">requests</span>:
+          <span style="color:#ff79c6">cpu</span>: 10m
+      <span style="color:#ff79c6">imagePullPolicy</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">imagePullSecrets</span>: []
+      <span style="color:#ff79c6">istioNamespace</span>: istio-system
+      <span style="color:#ff79c6">istiod</span>:
+        <span style="color:#ff79c6">enableAnalysis</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">jwtPolicy</span>: third-party-jwt
+      <span style="color:#ff79c6">logAsJson</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">logging</span>:
+        <span style="color:#ff79c6">level</span>: default:info
+      <span style="color:#ff79c6">meshNetworks</span>: {}
+      <span style="color:#ff79c6">mountMtlsCerts</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">meshID</span>: mesh1                        <span style="color:#6272a4"># 两个集群都必须配置且一样</span>
+      <span style="color:#ff79c6">multiCluster</span>:
+        <span style="color:#ff79c6">clusterName</span>: <span style="color:#f1fa8c">&#34;istio-cluster-001&#34;</span>   <span style="color:#6272a4"># 分别填写两个集群的名字</span>
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">network</span>: <span style="color:#f1fa8c">&#34;network1&#34;</span>                  <span style="color:#6272a4"># 两个集群都必须配置且一样</span>
+      <span style="color:#ff79c6">omitSidecarInjectorConfigMap</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">oneNamespace</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">operatorManageWebhooks</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">pilotCertProvider</span>: istiod
+      <span style="color:#ff79c6">priorityClassName</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">proxy</span>:
+        <span style="color:#ff79c6">autoInject</span>: enabled
+        <span style="color:#ff79c6">clusterDomain</span>: cluster.local
+        <span style="color:#ff79c6">componentLogLevel</span>: misc:error
+        <span style="color:#ff79c6">enableCoreDump</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">excludeIPRanges</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">excludeInboundPorts</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">excludeOutboundPorts</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">image</span>: proxyv2
+        <span style="color:#ff79c6">includeIPRanges</span>: <span style="color:#f1fa8c">&#39;*&#39;</span>
+        <span style="color:#ff79c6">logLevel</span>: warning
+        <span style="color:#ff79c6">privileged</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">readinessFailureThreshold</span>: <span style="color:#bd93f9">30</span>
+        <span style="color:#ff79c6">readinessInitialDelaySeconds</span>: <span style="color:#bd93f9">1</span>
+        <span style="color:#ff79c6">readinessPeriodSeconds</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 2000m
+            <span style="color:#ff79c6">memory</span>: 1024Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 100m
+            <span style="color:#ff79c6">memory</span>: 128Mi
+        <span style="color:#ff79c6">statusPort</span>: <span style="color:#bd93f9">15020</span>
+        <span style="color:#ff79c6">tracer</span>: zipkin
+      <span style="color:#ff79c6">proxy_init</span>:
+        <span style="color:#ff79c6">image</span>: proxyv2
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 2000m
+            <span style="color:#ff79c6">memory</span>: 1024Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 10m
+            <span style="color:#ff79c6">memory</span>: 10Mi
+      <span style="color:#ff79c6">sds</span>:
+        <span style="color:#ff79c6">token</span>:
+          <span style="color:#ff79c6">aud</span>: istio-ca
+      <span style="color:#ff79c6">sts</span>:
+        <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">0</span>
+      <span style="color:#ff79c6">tracer</span>:
+        <span style="color:#ff79c6">datadog</span>: {}
+        <span style="color:#ff79c6">lightstep</span>: {}
+        <span style="color:#ff79c6">stackdriver</span>: {}
+        <span style="color:#ff79c6">zipkin</span>: {}
+      <span style="color:#ff79c6">useMCP</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">istiodRemote</span>:
+      <span style="color:#ff79c6">injectionURL</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#ff79c6">pilot</span>:
+      <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">autoscaleMax</span>: <span style="color:#bd93f9">5</span>
+      <span style="color:#ff79c6">autoscaleMin</span>: <span style="color:#bd93f9">1</span>
+      <span style="color:#ff79c6">configMap</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">cpu</span>:
+        <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+      <span style="color:#ff79c6">enableProtocolSniffingForInbound</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">enableProtocolSniffingForOutbound</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">env</span>: {}
+      <span style="color:#ff79c6">image</span>: pilot
+      <span style="color:#ff79c6">keepaliveMaxServerConnectionAge</span>: 30m
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+      <span style="color:#ff79c6">traceSampling</span>: <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">telemetry</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">v2</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">metadataExchange</span>:
+          <span style="color:#ff79c6">wasmEnabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">prometheus</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+          <span style="color:#ff79c6">wasmEnabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">stackdriver</span>:
+          <span style="color:#ff79c6">configOverride</span>: {}
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">logging</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">monitoring</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">topology</span>: <span style="color:#ff79c6">false</span>
+</code></pre></div><p>安装Isitod</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 install -f istio-cluster-001-iop.yaml
+$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 install -f istio-cluster-002-iop.yaml
+</code></pre></div><h1 id="启用跨集群发现endpoint">启用跨集群发现EndPoint</h1>
+<p>集群分别安装对方的secret。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001  x create-remote-secret --name istio-cluster-001 | <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f -
+
+$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002  x create-remote-secret --name istio-cluster-002 | <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f -
+</code></pre></div><h1 id="启用双向mtls">启用双向mTLS</h1>
+<p>如果需要整个集群启动双向tls，则名称空间填写istio-system</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: default
+</span><span style="color:#f1fa8c">  namespace: sample
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: default
+</span><span style="color:#f1fa8c">  namespace: sample
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+</code></pre></div><p>至此多主istio集群部署完毕，下面开始验证。</p>
+<h1 id="验证跨集群访问">验证跨集群访问</h1>
+<p>目标：将在istio-cluster-001集群部署<code>HelloWorld</code>的<code>V1</code>版本和在istio-cluster-002集群部署<code>V2</code>版本。收到请求后，<code>HelloWorld</code>将在其响应中包含其版本。
+另外还将<code>Sleep</code>容器部署到两个集群中。我们将使用sleep Pod作为对<code>HelloWorld</code>服务的请求的源，模拟网内流量。最后，在产生流量之后，我们将观察哪个集群接收到了请求。</p>
+<h2 id="部署helloworld">部署helloworld</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#8be9fd;font-style:italic">hellworld_url</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;https://raw.githubusercontent.com/istio/istio/release-1.9/samples/helloworld/helloworld.yaml&#39;</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 create ns sample
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 label ns sample istio-injection<span style="color:#ff79c6">=</span>enabled
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 create ns sample 
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 label ns sample istio-injection<span style="color:#ff79c6">=</span>enabled
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v1 -n sample          <span style="color:#6272a4"># 部署hellword deploy v1版本到k1集群</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v2 -n sample          <span style="color:#6272a4"># 部署hellword deploy v2版本到k2集群</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld -n sample  <span style="color:#6272a4"># 部署svc</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld -n sample
+</code></pre></div><h2 id="部署sleep">部署sleep</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f https://raw.githubusercontent.com/istio/istio/release-1.9/samples/helloworld/helloworld.yaml -n sample
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f https://raw.githubusercontent.com/istio/istio/release-1.9/samples/helloworld/helloworld.yaml -n sample
+</code></pre></div><h2 id="确认pod-svc正常">确认pod svc正常</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 get pod,svc -n sample -owide
+NAME                                READY   STATUS    RESTARTS   AGE   IP              NODE                                               NOMINATED NODE   READINESS GATES
+pod/helloworld-v1-bb85789c4-rfrl8   2/2     Running   <span style="color:#bd93f9">0</span>          81m   172.31.7.36     ip-172-31-1-97.ap-southeast-1.compute.internal     &lt;none&gt;           &lt;none&gt;
+pod/sleep-7c47764b7-px9jj           2/2     Running   <span style="color:#bd93f9">0</span>          81m   172.31.45.201   ip-172-31-40-247.ap-southeast-1.compute.internal   &lt;none&gt;           &lt;none&gt;
+
+NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>    AGE   SELECTOR
+service/helloworld   ClusterIP   10.100.74.29   &lt;none&gt;        5000/TCP   82m   <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>helloworld
+service/sleep        ClusterIP   10.100.73.25   &lt;none&gt;        80/TCP     82m   <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep
+<span style="color:#6272a4">###############################</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 get pod,svc -n sample -owide
+NAME                                READY   STATUS    RESTARTS   AGE   IP              NODE                                              NOMINATED NODE   READINESS GATES
+pod/helloworld-v2-76c59fb8c-brztk   2/2     Running   <span style="color:#bd93f9">0</span>          81m   172.31.23.141   ip-172-31-30-29.ap-southeast-1.compute.internal   &lt;none&gt;           &lt;none&gt;
+pod/sleep-78cf8b5f6b-pdkmw          2/2     Running   <span style="color:#bd93f9">0</span>          81m   172.31.39.21    ip-172-31-42-44.ap-southeast-1.compute.internal   &lt;none&gt;           &lt;none&gt;
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>    AGE   SELECTOR
+service/helloworld   ClusterIP   10.100.227.4     &lt;none&gt;        5000/TCP   82m   <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>helloworld
+service/sleep        ClusterIP   10.100.101.254   &lt;none&gt;        80/TCP     82m   <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>sleep
+</code></pre></div><h2 id="进入sleep容器验证">进入sleep容器验证</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 <span style="color:#8be9fd;font-style:italic">exec</span> -it sleep-7c47764b7-px9jj -c sleep -n sample -- sh
+pod/ $ <span style="color:#ff79c6">for</span> i in <span style="color:#f1fa8c">`</span>seq 10<span style="color:#f1fa8c">`</span>;<span style="color:#ff79c6">do</span> curl -sS helloworld.sample:5000/hello;<span style="color:#ff79c6">done</span>  <span style="color:#6272a4"># 执行10次访问，查看结果。可以发现分别请求到了v1和v2。则跨集群成功。</span>
+Hello version: v2, instance: helloworld-v2-76c59fb8c-brztk
+Hello version: v1, instance: helloworld-v1-bb85789c4-rfrl8
+Hello version: v2, instance: helloworld-v2-76c59fb8c-brztk
+Hello version: v1, instance: helloworld-v1-bb85789c4-rfrl8
+Hello version: v1, instance: helloworld-v1-bb85789c4-rfrl8
+Hello version: v2, instance: helloworld-v2-76c59fb8c-brztk
+Hello version: v1, instance: helloworld-v1-bb85789c4-rfrl8
+Hello version: v2, instance: helloworld-v2-76c59fb8c-brztk
+Hello version: v1, instance: helloworld-v1-bb85789c4-rfrl8
+Hello version: v2, instance: helloworld-v2-76c59fb8c-brztk
+</code></pre></div><p>同理进入k2集群的sleep去访问也一样的效果。</p>
+<h1 id="中间涉及到的验证">中间涉及到的验证</h1>
+<h2 id="mtls证书验证">mtls证书验证</h2>
+<p>在未启用Istio双向TLS时，跨集群不通过，因为跨集群必须使用mtls通信，默认为permissive，允许非mtls的流量。</p>
+<ul>
+<li>在执行<code>启动双向mTLS</code>步骤前，并未发现ca。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002  <span style="color:#8be9fd;font-style:italic">exec</span> helloworld-v2-76c59fb8c-brztk -c istio-proxy -n sample -- openssl s_client -showcerts -connect helloworld:5000
+write:errno<span style="color:#ff79c6">=</span><span style="color:#bd93f9">104</span>
+CONNECTED<span style="color:#ff79c6">(</span>00000005<span style="color:#ff79c6">)</span>
+---
+no peer certificate available
+---
+No client certificate CA names sent
+---
+SSL handshake has <span style="color:#8be9fd;font-style:italic">read</span> <span style="color:#bd93f9">0</span> bytes and written <span style="color:#bd93f9">312</span> bytes
+Verification: OK
+---
+New, <span style="color:#ff79c6">(</span>NONE<span style="color:#ff79c6">)</span>, Cipher is <span style="color:#ff79c6">(</span>NONE<span style="color:#ff79c6">)</span>
+Secure Renegotiation IS NOT supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify <span style="color:#ff79c6">return</span> code: <span style="color:#bd93f9">0</span> <span style="color:#ff79c6">(</span>ok<span style="color:#ff79c6">)</span>
+</code></pre></div><p>在执行了<code>启动双向mTLS</code>步骤后，可以顺利发现证书，且由于都是root ca签发的证书，所以根证书都一样。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">   <span style="color:#6272a4"># 下面证书部分略过</span>
+   $ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 <span style="color:#8be9fd;font-style:italic">exec</span> helloworld-v2-76c59fb8c-brztk -c istio-proxy -n sample -- openssl s_client -showcerts -connect helloworld:5000
+   <span style="color:#8be9fd;font-style:italic">depth</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span> <span style="color:#8be9fd;font-style:italic">O</span> <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+   verify error:num<span style="color:#ff79c6">=</span>19:self signed certificate in certificate chain
+   CONNECTED<span style="color:#ff79c6">(</span>00000005<span style="color:#ff79c6">)</span>
+   ---
+   Certificate chain
+    <span style="color:#bd93f9">0</span> s:
+      i:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Intermediate CA, <span style="color:#8be9fd;font-style:italic">L</span> <span style="color:#ff79c6">=</span> klook-prd
+   -----BEGIN CERTIFICATE-----
+   MIIEZTCCAk2gAwIBAgIQGTmDhF/+LZcAV5maiuKk2zANBgkqhkiG9w0BAQsFADA+
+   ...
+   ds5x2GhkchhHcLW4d+bUAO+xG9O5MY1MRg<span style="color:#ff79c6">==</span>
+   -----END CERTIFICATE-----
+    <span style="color:#bd93f9">1</span> s:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Intermediate CA, <span style="color:#8be9fd;font-style:italic">L</span> <span style="color:#ff79c6">=</span> klook-prd
+      i:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+   -----BEGIN CERTIFICATE-----
+   MIIFmzCCA4OgAwIBAgICAYEwDQYJKoZIhvcNAQELBQAwIjEOMAwGA1UECgwFSXN0
+   ...
+   ARfBl7meBhCA659nXQ839sQ/8TDDqwTyU28nwYDKATdP+ap/B7K1u8QXs7O7QAg<span style="color:#ff79c6">=</span>
+   -----END CERTIFICATE-----
+    <span style="color:#bd93f9">2</span> s:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+      i:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+   -----BEGIN CERTIFICATE-----
+   MIIFCTCCAvGgAwIBAgIJAJp8QkLGogzSMA0GCSqGSIb3DQEBCwUAMCIxDjAMBgNV
+   ...
+   OiZVWpAKDVf1mzEDda7uj8aDLRSBhRZhfwY8iF4G93CvYpjKsxLO8jRW5N3c
+   -----END CERTIFICATE-----
+    <span style="color:#bd93f9">3</span> s:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+      i:O <span style="color:#ff79c6">=</span> Istio, <span style="color:#8be9fd;font-style:italic">CN</span> <span style="color:#ff79c6">=</span> Root CA
+   -----BEGIN CERTIFICATE-----
+   MIIFCTCCAvGgAwIBAgIJAJp8QkLGogzSMA0GCSqGSIb3DQEBCwUAMCIxDjAMBgNV
+   ...
+   OiZVWpAKDVf1mzEDda7uj8aDLRSBhRZhfwY8iF4G93CvYpjKsxLO8jRW5N3c
+   -----END CERTIFICATE-----
+</code></pre></div><h2 id="endpoints验证">endpoints验证</h2>
+<p>当查看istio集群endpoints时，可以明显看到helloworld.sample.svc.cluster.local的svc地址的5000端口有两个pod ip。这两个ip分别是集群k1个k2的helloworld pod ip。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 pc endpoint helloworld-v2-76c59fb8c-brztk -n sample --port <span style="color:#bd93f9">5000</span>
+ENDPOINT               STATUS      OUTLIER CHECK     CLUSTER
+127.0.0.1:5000         HEALTHY     OK                inbound|5000<span style="color:#ff79c6">||</span>
+172.31.23.141:5000     HEALTHY     OK                outbound|5000<span style="color:#ff79c6">||</span>helloworld.sample.svc.cluster.local
+172.31.7.36:5000       HEALTHY     OK                outbound|5000<span style="color:#ff79c6">||</span>helloworld.sample.svc.cluster.local
+</code></pre></div>
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/network-dig/" data-toggle="tooltip" data-placement="top" title="调试工具dig你怎么用">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
