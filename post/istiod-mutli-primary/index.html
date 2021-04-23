@@ -240,6 +240,7 @@
         <li><a href="#endpoints验证">endpoints验证</a></li>
       </ul>
     </li>
+    <li><a href="#跨集群验证">跨集群验证</a></li>
   </ul>
 </nav>
                 
@@ -635,7 +636,59 @@ ENDPOINT               STATUS      OUTLIER CHECK     CLUSTER
 127.0.0.1:5000         HEALTHY     OK                inbound|5000<span style="color:#ff79c6">||</span>
 172.31.23.141:5000     HEALTHY     OK                outbound|5000<span style="color:#ff79c6">||</span>helloworld.sample.svc.cluster.local
 172.31.7.36:5000       HEALTHY     OK                outbound|5000<span style="color:#ff79c6">||</span>helloworld.sample.svc.cluster.local
-</code></pre></div>
+</code></pre></div><h1 id="跨集群验证">跨集群验证</h1>
+<p>
+  <img src="/img/istio-mutli-primary1.png" alt="">
+
+</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#!/bin/sh
+</span><span style="color:#ff79c6"></span><span style="color:#8be9fd;font-style:italic">hellworld_url</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;https://raw.githubusercontent.com/istio/istio/release-1.9/samples/helloworld/helloworld.yaml&#39;</span>
+<span style="color:#8be9fd;font-style:italic">sleep_url</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;https://raw.githubusercontent.com/istio/istio/release-1.9/samples/sleep/sleep.yaml&#39;</span>
+
+<span style="color:#8be9fd;font-style:italic">k1</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl --kubeconfig=/root/.kube/istio-cluster-001&#39;</span>
+<span style="color:#8be9fd;font-style:italic">k2</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#39;kubectl --kubeconfig=/root/.kube/istio-cluster-002&#39;</span>
+<span style="color:#6272a4"># 部署环境准备工作</span>
+<span style="color:#8be9fd;font-style:italic">$k1</span> create ns t-mtls
+<span style="color:#8be9fd;font-style:italic">$k1</span> create ns t-nomtls
+<span style="color:#8be9fd;font-style:italic">$k2</span> create ns t-mtls
+<span style="color:#8be9fd;font-style:italic">$k2</span> create ns t-nomtls
+
+<span style="color:#8be9fd;font-style:italic">$k1</span> label ns t-mtls istio-injection<span style="color:#ff79c6">=</span>enabled
+<span style="color:#8be9fd;font-style:italic">$k1</span> label ns t-nomtls istio-injection<span style="color:#ff79c6">=</span>enabled
+<span style="color:#8be9fd;font-style:italic">$k2</span> label ns t-mtls istio-injection<span style="color:#ff79c6">=</span>enabled
+<span style="color:#8be9fd;font-style:italic">$k2</span> label ns t-nomtls istio-injection<span style="color:#ff79c6">=</span>enabled
+
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-mtls -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v1
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-nomtls -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v1
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$sleep_url</span> -n t-mtls
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$sleep_url</span> -n t-nomtls
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-mtls -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld
+<span style="color:#8be9fd;font-style:italic">$k1</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-nomtls -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld
+
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-mtls -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v2
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-nomtls -l <span style="color:#8be9fd;font-style:italic">version</span><span style="color:#ff79c6">=</span>v2
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$sleep_url</span> -n t-mtls
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$sleep_url</span> -n t-nomtls
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-mtls -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld
+<span style="color:#8be9fd;font-style:italic">$k2</span> apply -f <span style="color:#8be9fd;font-style:italic">$hellworld_url</span> -n t-nomtls -l <span style="color:#8be9fd;font-style:italic">service</span><span style="color:#ff79c6">=</span>helloworld
+</code></pre></div><p>通过上面的步骤，我们可以验证一个跨集群调度问题。如上图1-8种请求是否都通过？</p>
+<ul>
+<li>
+<p><code>结论1</code>：在使用默认PeerAuthentication的情况下，以上8种结果均能实现跨集群调度。
+4.1过程表示cluster1的sleep服务请求cluster2的helloworld服务，然后helloworld服务在请求cluster1里的httpbin服务
+即：每个namespace下的sleep服务都能通过helloword.<!-- raw HTML omitted -->访问v1、v2版本的hellworld程序</p>
+</li>
+<li>
+<p><code>结论2</code>：在两个集群的t-mtls名称空间下开启STRICT的PeerAuthentication配置情况下, 以上8种结果也均能实现跨集群调度。</p>
+</li>
+<li>
+<p><code>结论3</code>：当在集群t-nomtls名称空间下DIABLE TLS。(禁止yaml参考最后), t-nomtls名称空间下的sleep pod无法请求helloworld服务。</p>
+</li>
+<li>
+<p><code>最后</code>：无sideCar的Pod无法实现跨集群调度，只能调度本集群存在的服务，不存在则请求失败。</p>
+</li>
+</ul>
+
 
                 
                 
