@@ -240,7 +240,11 @@
         <li><a href="#endpoints验证">endpoints验证</a></li>
       </ul>
     </li>
-    <li><a href="#跨集群验证">跨集群验证</a></li>
+    <li><a href="#跨集群验证">跨集群验证</a>
+      <ul>
+        <li><a href="#结论2和结论3开启和关闭的pa内容">结论2和结论3开启和关闭的pa内容</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
                 
@@ -688,7 +692,86 @@ ENDPOINT               STATUS      OUTLIER CHECK     CLUSTER
 <p><code>最后</code>：无sideCar的Pod无法实现跨集群调度，只能调度本集群存在的服务，不存在则请求失败。</p>
 </li>
 </ul>
+<h2 id="结论2和结论3开启和关闭的pa内容">结论2和结论3开启和关闭的pa内容</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#!/bin/sh
+</span><span style="color:#ff79c6"></span><span style="color:#6272a4"># 结论2 开启STRICT的配置文件</span>
+allow-mtls<span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: allow-mtls
+</span><span style="color:#f1fa8c">  namespace: t-mtls
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
 
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: allow-mtls
+</span><span style="color:#f1fa8c">  namespace: t-mtls
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: STRICT
+</span><span style="color:#f1fa8c">EOF</span>
+<span style="color:#ff79c6">}</span>
+
+<span style="color:#6272a4"># 结论3 关闭t-nomtls下的mtls认证需要的配置文件</span>
+disable-mtls<span style="color:#ff79c6">(){</span>
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: disable-mtls
+</span><span style="color:#f1fa8c">  namespace: t-nomtls
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;networking.istio.io/v1alpha3&#34;
+</span><span style="color:#f1fa8c">kind: &#34;DestinationRule&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;default&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;t-nomtls&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  host: &#34;*.local&#34;
+</span><span style="color:#f1fa8c">  trafficPolicy:
+</span><span style="color:#f1fa8c">    tls:
+</span><span style="color:#f1fa8c">      mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;security.istio.io/v1beta1&#34;
+</span><span style="color:#f1fa8c">kind: &#34;PeerAuthentication&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: disable-mtls
+</span><span style="color:#f1fa8c">  namespace: t-nomtls
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  mtls:
+</span><span style="color:#f1fa8c">    mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+
+kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 apply -f - <span style="color:#f1fa8c">&lt;&lt;EOF
+</span><span style="color:#f1fa8c">apiVersion: &#34;networking.istio.io/v1alpha3&#34;
+</span><span style="color:#f1fa8c">kind: &#34;DestinationRule&#34;
+</span><span style="color:#f1fa8c">metadata:
+</span><span style="color:#f1fa8c">  name: &#34;default&#34;
+</span><span style="color:#f1fa8c">  namespace: &#34;t-nomtls&#34;
+</span><span style="color:#f1fa8c">spec:
+</span><span style="color:#f1fa8c">  host: &#34;*.local&#34;
+</span><span style="color:#f1fa8c">  trafficPolicy:
+</span><span style="color:#f1fa8c">    tls:
+</span><span style="color:#f1fa8c">      mode: DISABLE
+</span><span style="color:#f1fa8c">EOF</span>
+<span style="color:#ff79c6">}</span>
+
+<span style="color:#8be9fd;font-style:italic">$1</span>
+</code></pre></div>
 
                 
                 
