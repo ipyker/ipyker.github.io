@@ -71,6 +71,15 @@
     </item>
     
     <item>
+      <title>Thanos分布式集群Prometheus方案设计</title>
+      <link>https://www.ipyker.com/post/prometheus-thanos-architecture/</link>
+      <pubDate>Fri, 20 Mar 2020 19:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/prometheus-thanos-architecture/</guid>
+      <description>写在开头 本文是记录一次真实生产环境prometheus架构调整的的设计方案。 现有promethus架构 架构剖析 采用4台作业prometheu</description>
+    </item>
+    
+    <item>
       <title>php-fpm镜像快速安装模块</title>
       <link>https://www.ipyker.com/post/php-image-docker/</link>
       <pubDate>Fri, 20 Mar 2020 14:02:14 +0000</pubDate>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="Thanos分布式集群Prometheus方案设计" />
+    <meta property="og:title" content="Thanos分布式集群Prometheus方案设计" />
+    <meta property="twitter:title" content="Thanos分布式集群Prometheus方案设计" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>Thanos分布式集群Prometheus方案设计-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/prometheus-thanos-architecture/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://images.pexels.com/photos/241544/pexels-photo-241544.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/prometheus" title="Prometheus">
+                            Prometheus
+                        </a>
+                        
+                        <a class="tag" href="/tags/thanos" title="Thanos">
+                            Thanos
+                        </a>
+                        
+                    </div>
+                    <h1>Thanos分布式集群Prometheus方案设计</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Friday, March 20, 2020
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#写在开头">写在开头</a></li>
+    <li><a href="#现有promethus架构">现有promethus架构</a></li>
+    <li><a href="#架构剖析">架构剖析</a></li>
+    <li><a href="#prometheus分片">prometheus分片</a></li>
+    <li><a href="#prometheus分片剖析">prometheus分片剖析</a>
+      <ul>
+        <li><a href="#为什么要分片">为什么要分片？</a></li>
+        <li><a href="#如何分片">如何分片？</a></li>
+      </ul>
+    </li>
+    <li><a href="#thanos架构拓扑">Thanos架构拓扑</a></li>
+    <li><a href="#thanos原理剖析">Thanos原理剖析</a></li>
+    <li><a href="#thanos-query和thanos-sidecar拓扑">Thanos Query和Thanos Sidecar拓扑</a></li>
+    <li><a href="#thanos数据上传-和-查询对象存储数据拓扑">Thanos数据上传 和 查询对象存储数据拓扑</a></li>
+    <li><a href="#最终prometheus--thanos运行于k8s架构">最终prometheus + thanos运行于K8S架构</a></li>
+    <li><a href="#k8s--prometheus--thanos优势">K8S + Prometheus + Thanos优势</a></li>
+  </ul>
+</nav>
+                
+                <h1 id="写在开头">写在开头</h1>
+<p>本文是记录一次真实生产环境prometheus架构调整的的设计方案。</p>
+<h1 id="现有promethus架构">现有promethus架构</h1>
+<p>
+  <img src="/img/prometheus-now.png" alt="">
+
+</p>
+<h1 id="架构剖析">架构剖析</h1>
+<ul>
+<li>采用4台作业prometheus抓取metrics。</li>
+<li>采用2台查询prometheus通过remote_read接口查询作业节点抓取的metrics。</li>
+<li>最终通过grafana关联2个查询prometheus的数据源进行数据绘图。</li>
+</ul>
+<p>优点：</p>
+<ol>
+<li>实现了监控数据的收集、查询节点分离，更容易实现高可用。</li>
+<li>查询节点实现了数据指标的聚合，作业节点达到水平扩容。</li>
+</ol>
+<p>缺点：</p>
+<ol>
+<li>指标数据存放在本地，且分散在每台作业节点上，存在单点故障。</li>
+<li>查询节点使用远程查询，依然没有解决磁盘IO的问题。</li>
+<li>需要人工干预哪些指标应该被哪台prometheus监控。</li>
+</ol>
+<h1 id="prometheus分片">prometheus分片</h1>
+<p>
+  <img src="/img/prometheus-share.png" alt="">
+
+</p>
+<h1 id="prometheus分片剖析">prometheus分片剖析</h1>
+<h2 id="为什么要分片">为什么要分片？</h2>
+<p>如果集群节点数量达到上千甚至几千的规模，对于一些节点级服务暴露的指标，它们这种单个服务背后的指标数据体量就非常大；针对这种场景，一个 Prometheus 实例可能连这单个服务的采集任务都扛不住。Prometheus 需要向这个服务所有后端实例发请求采集数据，由于后端实例数量规模太大，采集并发量就会很高，一方面对节点的带宽、CPU、磁盘 IO 都有一定的压力，另一方面 Prometheus 使用的磁盘空间有限，采集的数据量过大很容易就将磁盘塞满了，通常要做一些取舍才能将数据量控制在一定范围，但这种取舍也会降低数据完整和精确程度，不推荐这样做。那么针对服务做一下分片，将其拆分成多个 group，让一个 Prometheus 实例仅采集这个服务背后的某一个 group 的数据，这样就可以将这个大体量服务的监控数据拆分到多个 Prometheus 实例上。</p>
+<h2 id="如何分片">如何分片？</h2>
+<p>利用consul_sd_configs或kubernetes_sd_configs等 服务发现，再利用 Prometheus relabel 配置的 hashmod 来对 node 做分片，每个 Prometheus 实例仅抓其中一个分片中的数据:</p>
+<p>部分 prometheus.yaml 配置如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- <span style="color:#ff79c6">job_name</span>: <span style="color:#f1fa8c">&#39;cadvisor-1&#39;</span>
+    <span style="color:#ff79c6">metrics_path</span>: /metrics/cadvisor
+    <span style="color:#ff79c6">kubernetes_sd_configs</span>:
+    - <span style="color:#ff79c6">role</span>: node
+    <span style="color:#ff79c6">tls_config</span>:
+      <span style="color:#ff79c6">insecure_skip_verify</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">relabel_configs</span>:
+    - <span style="color:#ff79c6">source_labels</span>: [__address__]
+      <span style="color:#ff79c6">modulus</span>:       <span style="color:#bd93f9">4</span>    <span style="color:#6272a4"># 将节点分片成 4 个 group</span>
+      <span style="color:#ff79c6">target_label</span>:  __tmp_hash
+      <span style="color:#ff79c6">action</span>:        hashmod
+    - <span style="color:#ff79c6">source_labels</span>: [__tmp_hash]
+      <span style="color:#ff79c6">regex</span>:         <span style="color:#bd93f9">1</span>  <span style="color:#6272a4"># 只抓第 2 个 group 中节点的数据(序号 0 为第 1 个 group)</span>
+      <span style="color:#ff79c6">action</span>:        keep
+
+</code></pre></div><h1 id="thanos架构拓扑">Thanos架构拓扑</h1>
+<p>
+  <img src="/img/thanos-architecture.png" alt="">
+
+</p>
+<h1 id="thanos原理剖析">Thanos原理剖析</h1>
+<p>Thanos Query它实现了 Prometheus 的 HTTP API，能够 执行 PromQL。这样，查询 Prometheus 监控数据的 client 就不直接查询 Prometheus 本身了，而是去查询 Thanos Query，Thanos Query 再去下游多个存储了数据的地方查数据，最后将这些数据聚合去重后返回给 client，也就实现了分布式 Prometheus 的数据查询。</p>
+<p>那么 Thanos Query 又如何去查下游分散的数据呢？Thanos 为此抽象了一套叫 Store API 的内部 gRPC 接口，其它一些组件通过这个接口来暴露数据给 Thanos Query，它自身也就可以做到完全无状态部署，实现高可用与动态扩展。</p>
+<p>那么这些分散的数据来自哪些地方呢？首先，Prometheus 会将采集的数据存到本机磁盘上，如果我们直接用这些分散在各个磁盘上的数据，可以给每个 Prometheus 附带部署一个 Sidecar，这个 Sidecar 实现 Thanos Store API，当 Thanos Query
+对其发起查询时，Sidecar 就读取跟它绑定部署的 Prometheus 实例上的监控数据返回给 Thanos Query。</p>
+<p>由于 Thanos Query 可以对数据进行聚合与去重，所以可以很轻松实现高可用：相同的 Prometheus 部署多个副本(都附带 Sidecar)，然后 Thanos Query 去所有 Sidecar 查数据，即便有一个 Prometheus 实例挂掉过一段时间，数据聚合与去重后仍然能得到完整数据。</p>
+<p>不过因为磁盘空间有限，所以 Prometheus 存储监控数据的能力也是有限的，通常会给 Prometheus 设置一个数据过期时间 (默认15天) 或者最大数据量大小，不断清理旧数据以保证磁盘不被撑爆。因此，我们无法看到时间比较久远的监控数据，有时候这也给我们的问题排查和数据统计造成一些困难。那么对于需要长期存储的数据，并且使用频率不那么高，最理想的方式是存进对象存储。Thanos Sidecar等组件支持将数据上传至对象存储。</p>
+<p>那么这些被上传到了对象存储里的监控数据该如何查询呢？既然Thanos 抽象出了 Store API，那么只要实现了该接口的组件都可以作为 Thanos Query 查询的数据源，Thanos Store Gateway 这个组件也实现了 Store API，向 Thanos Query 暴露对象存储的数据。Thanos Store Gateway 内部还做了一些加速数据获取的优化逻辑，一是缓存了 TSDB 索引，二是优化了对象存储的请求 (用尽可能少的请求量拿到所有需要的数据)。</p>
+<blockquote>
+<p>这里不对Ruler报警规则组件和Compact指标数据压缩组件做介绍。</p>
+</blockquote>
+<h1 id="thanos-query和thanos-sidecar拓扑">Thanos Query和Thanos Sidecar拓扑</h1>
+<p>
+  <img src="/img/thanos-sidecar.png" alt="">
+
+</p>
+<h1 id="thanos数据上传-和-查询对象存储数据拓扑">Thanos数据上传 和 查询对象存储数据拓扑</h1>
+<p>
+  <img src="/img/thanos-upload-data.png" alt="">
+
+</p>
+<h1 id="最终prometheus--thanos运行于k8s架构">最终prometheus + thanos运行于K8S架构</h1>
+<p>
+  <img src="/img/thanos_prometheus.png" alt="">
+
+</p>
+<h1 id="k8s--prometheus--thanos优势">K8S + Prometheus + Thanos优势</h1>
+<p>相比于目前公司prometheus架构，k8s+prometheus+thanos具有以下优势：</p>
+<ul>
+<li>prometheus高可用：每个prometheus都可用配置多个副本集，从而解决单点故障的问题。</li>
+<li>thanos高可用：每个thanos组件都可用配置多个副本集，从而解决thanos单点故障的问题。</li>
+<li>服务分片：将大量服务或者指标进行hashmod分片，水平扩展减轻单点prometheus的压力。</li>
+<li>数据聚合与去重：thanos query会自动将若干prometheus采集过来的数据聚合去重后返回。</li>
+<li>数据持久化：thanos sidecar和ruler会将prometheus采集的数据永久存储在对象存储中。</li>
+<li>时间序列降采样：查询时间范围较久的数据时，compact可提供降采样已保障查询性能。</li>
+</ul>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/php-image-docker/" data-toggle="tooltip" data-placement="top" title="php-fpm镜像快速安装模块">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/post/k8s-redis-cluster/" data-toggle="tooltip" data-placement="top" title="Kubernetes 部署高可用Redis Cluster">Next
+                            Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/istio" title="istio">
+                            istio
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/servicemesh" title="servicemesh">
+                            servicemesh
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
