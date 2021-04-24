@@ -6,7 +6,16 @@
     <description>Recent content in Tech on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 20 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/tech/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 22 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/categories/tech/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Istio1.8之后中的智能 DNS 代理</title>
+      <link>https://www.ipyker.com/post/istiod-smart-dns-proxy/</link>
+      <pubDate>Thu, 22 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/istiod-smart-dns-proxy/</guid>
+      <description>DNS 解析是 Kubernetes 上任何应用基础架构的重要组成部分。当你的应用代码试图访问 Kubernetes 集群中的另一个服务，甚至是互联网上的服务时，在发起与服务的连接之前，它必</description>
+    </item>
+    
     <item>
       <title>Authentication Policy控制集群mTLS双向认证</title>
       <link>https://www.ipyker.com/post/istiod-authentication-policy/</link>
