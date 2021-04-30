@@ -6,7 +6,16 @@
     <description>Recent content on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 22 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 27 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>部署Istio1.16多控制平面集群</title>
+      <link>https://www.ipyker.com/post/istio1_16_mutil_primary/</link>
+      <pubDate>Tue, 27 Apr 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/istio1_16_mutil_primary/</guid>
+      <description>本文Istio集群针对istio1.16版本，istio1.18之后的集群架构参考：https://www.ipyker.com/post/</description>
+    </item>
+    
     <item>
       <title>Istio1.8之后中的智能 DNS 代理</title>
       <link>https://www.ipyker.com/post/istiod-smart-dns-proxy/</link>

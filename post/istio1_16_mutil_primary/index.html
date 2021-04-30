@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+    <meta property="og:site_name" content="云原生与运维">
+    <meta property="og:type" content="article">
+
+    
+    <meta property="og:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg">
+    <meta property="twitter:image" content="https://www.ipyker.com/img/post-bg-coffee.jpeg" />
+    
+
+    
+    <meta name="title" content="部署Istio1.16多控制平面集群" />
+    <meta property="og:title" content="部署Istio1.16多控制平面集群" />
+    <meta property="twitter:title" content="部署Istio1.16多控制平面集群" />
+    
+
+    
+    <meta name="description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。">
+    <meta property="og:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    <meta property="twitter:description" content="Pyker，资深运维工程师, 开源爱好者，热爱云原生 | 这里是 Pyker 的博客，与你一起发现更大的世界。" />
+    
+
+    
+    <meta property="twitter:card" content="summary" />
+    
+    
+
+    <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>部署Istio1.16多控制平面集群-Pyker | Pyker Blog</title>
+
+    <link rel="canonical" href="/post/istio1_16_mutil_primary/">
+
+    <link rel="stylesheet" href="/css/iDisqus.min.css"/>
+
+    
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    
+    <link rel="stylesheet" href="/css/zanshang.css">
+
+    
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" type="text/css">
+
+    
+    
+
+    
+    
+    <script src="/js/jquery.min.js"></script>
+
+    
+    <script src="/js/bootstrap.min.js"></script>
+
+    
+    <script src="/js/hux-blog.min.js"></script>
+
+    
+    
+
+</head>
+
+
+
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">云原生与运维</a>
+        </div>
+
+        
+        
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                        
+                        <li>
+                            <a href="/categories/owner">owner</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/categories/tech">tech</a>
+                        </li>
+                        
+                    
+                    
+		    
+                        <li><a href="/top/books/">BOOKS</a></li>
+                    
+                        <li><a href="/top/about/">ABOUT</a></li>
+                    
+
+                    
+		    <li>
+                        <a href="/search">SEARCH <img src="/img/search.png" height="15" style="cursor: pointer;" alt="Search"></a>
+		    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+</nav>
+<script>
+    
+    
+    
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        
+            $navbar.className = " ";
+            
+            setTimeout(function(){
+                
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+
+
+<style type="text/css">
+    header.intro-header {
+        background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fattach.bbs.miui.com%2Fforum%2F201312%2F31%2F111859myvyiivetyftfz2n.jpg&refer=http%3A%2F%2Fattach.bbs.miui.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621697034&t=7a8cac450766520f210ac243618e9f2c')
+    }
+</style>
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/kubernetes" title="Kubernetes">
+                            Kubernetes
+                        </a>
+                        
+                        <a class="tag" href="/tags/istio" title="Istio">
+                            Istio
+                        </a>
+                        
+                        <a class="tag" href="/tags/servicemesh" title="ServiceMesh">
+                            ServiceMesh
+                        </a>
+                        
+                    </div>
+                    <h1>部署Istio1.16多控制平面集群</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by 
+                        
+                                 &#34;Pyker&#34;
+                         
+                        on 
+                        Tuesday, April 27, 2021
+                        
+                        
+                        
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+
+
+<article>
+    <div class="container">
+        <div class="row">
+
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                post-container">
+
+                
+                <header>
+                    <h2>TOC</h2>
+                </header>
+                <nav id="TableOfContents">
+  <ul>
+    <li><a href="#多主模式架构">多主模式架构</a></li>
+    <li><a href="#架构解析">架构解析</a></li>
+    <li><a href="#部署前准备">部署前准备</a></li>
+    <li><a href="#部署证书">部署证书</a></li>
+    <li><a href="#安装istiod">安装Istiod</a></li>
+    <li><a href="#新增coredns支持global解析">新增coredns支持.global解析</a></li>
+    <li><a href="#部署服务验证">部署服务验证</a></li>
+    <li><a href="#创建serviceentry资源">创建ServiceEntry资源</a></li>
+    <li><a href="#进入sleep容器验证">进入sleep容器验证</a></li>
+    <li><a href="#结论">结论</a></li>
+  </ul>
+</nav>
+                
+                <p>本文Istio集群针对istio1.16版本，istio1.18之后的集群架构参考：<a href="https://www.ipyker.com/post/istiod-mutli-primary/">https://www.ipyker.com/post/istiod-mutli-primary/</a></p>
+<h1 id="多主模式架构">多主模式架构</h1>
+<p>
+  <img src="/img/istio-mutli-primary2.png" alt="">
+
+</p>
+<h1 id="架构解析">架构解析</h1>
+<ul>
+<li>Istiod使用共同ROOT CA签发的中间证书来安装Istiod，从而确认彼此之间的信任关系。</li>
+<li>安装Isitod时需要安装istiocoredns组件，通过它来解析.global后缀的跨集群服务。</li>
+<li>通过serviceentry使服务会基于双向mTLS连接，集群1上对service2的访问会路由至集群2的ingressgataway的15443端口。15443是一个特殊的 SNI-aware Envoy，进入 15443 端口的流量会为目标集群内适当的服务的 pods 提供负载均衡。</li>
+</ul>
+<h1 id="部署前准备">部署前准备</h1>
+<ul>
+<li>准备好2个Kubernetes集群，注意两个集群的apiserver需要能互相访问</li>
+<li>准备好一份CA证书，可以是openssl自签发的。</li>
+<li>本文准备了两个Kubernetes集群，名称分别为<code>istio-cluster-001</code>和<code>istio-cluster-002</code></li>
+</ul>
+<blockquote>
+<p>当前操作主机拥有两个集群的权限，因此有些公共资源部分省去了copy后在apply的步骤</p>
+</blockquote>
+<h1 id="部署证书">部署证书</h1>
+<p>在安装istio之前，需要先部署一个cacerts的secret资源。可以使用openssl生成ca证书和中间证书。然后部署到k8s，包括所有输入文件<code>ca-cert.pem</code>，<code>ca-key.pem</code>， <code>root-cert.pem</code>和<code>cert-chain.pem</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># istio-cluster-001 部署证书</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 create namespace istio-system
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 create secret generic cacerts -n istio-system <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-key.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./root-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./cert-chain.pem
+
+<span style="color:#6272a4"># istio-cluster-002 部署证书</span>
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 create namespace istio-system
+$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 create secret generic cacerts -n istio-system <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./ca-key.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./root-cert.pem <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>      --from-file<span style="color:#ff79c6">=</span>./cert-chain.pem
+</code></pre></div><blockquote>
+<p>此证书已经生成好的，两个集群可以用同一个中间证书，也可以用ROOT CA分别签发两个集群的证书，详细步骤参考：<a href="https://istio.io/latest/docs/tasks/security/cert-management/plugin-ca-cert/">https://istio.io/latest/docs/tasks/security/cert-management/plugin-ca-cert/</a></p>
+</blockquote>
+<h1 id="安装istiod">安装Istiod</h1>
+<p>准备IstioOperator安装配置文件，集群1和集群2参考下面配置，注意注释部分中的解释。</p>
+<blockquote>
+<p>本文只涉及到Istiod集群相关配置，可观测组件未配置。</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ff79c6">apiVersion</span>: install.istio.io/v1alpha1
+<span style="color:#ff79c6">kind</span>: IstioOperator
+<span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">addonComponents</span>:
+    <span style="color:#ff79c6">grafana</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">istiocoredns</span>:           <span style="color:#6272a4"># 必须开启istiocoredns，跨集群需要</span>
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">kiali</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">prometheus</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">tracing</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+  <span style="color:#ff79c6">components</span>:
+    <span style="color:#ff79c6">base</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">citadel</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+    <span style="color:#ff79c6">cni</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">egressGateways</span>:
+    - <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: ISTIO_META_ROUTER_MODE
+          <span style="color:#ff79c6">value</span>: sni-dnat
+        <span style="color:#ff79c6">hpaSpec</span>:
+          <span style="color:#ff79c6">maxReplicas</span>: <span style="color:#bd93f9">5</span>
+          <span style="color:#ff79c6">metrics</span>:
+          - <span style="color:#ff79c6">resource</span>:
+              <span style="color:#ff79c6">name</span>: cpu
+              <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">type</span>: Resource
+          <span style="color:#ff79c6">minReplicas</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">scaleTargetRef</span>:
+            <span style="color:#ff79c6">apiVersion</span>: apps/v1
+            <span style="color:#ff79c6">kind</span>: Deployment
+            <span style="color:#ff79c6">name</span>: istio-egressgateway
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 2000m
+            <span style="color:#ff79c6">memory</span>: 1024Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 100m
+            <span style="color:#ff79c6">memory</span>: 128Mi
+        <span style="color:#ff79c6">service</span>:
+          <span style="color:#ff79c6">ports</span>:
+          - <span style="color:#ff79c6">name</span>: http2
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8080</span>
+          - <span style="color:#ff79c6">name</span>: https
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">443</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8443</span>
+          - <span style="color:#ff79c6">name</span>: tls
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">15443</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">15443</span>
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+      <span style="color:#ff79c6">name</span>: istio-egressgateway
+    <span style="color:#ff79c6">ingressGateways</span>:            <span style="color:#6272a4"># 必须ingressgateway，集群需要</span>
+    - <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: ISTIO_META_ROUTER_MODE
+          <span style="color:#ff79c6">value</span>: sni-dnat
+        <span style="color:#ff79c6">hpaSpec</span>:
+          <span style="color:#ff79c6">maxReplicas</span>: <span style="color:#bd93f9">5</span>
+          <span style="color:#ff79c6">metrics</span>:
+          - <span style="color:#ff79c6">resource</span>:
+              <span style="color:#ff79c6">name</span>: cpu
+              <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">type</span>: Resource
+          <span style="color:#ff79c6">minReplicas</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">scaleTargetRef</span>:
+            <span style="color:#ff79c6">apiVersion</span>: apps/v1
+            <span style="color:#ff79c6">kind</span>: Deployment
+            <span style="color:#ff79c6">name</span>: istio-ingressgateway
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 2000m
+            <span style="color:#ff79c6">memory</span>: 1024Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 100m
+            <span style="color:#ff79c6">memory</span>: 128Mi
+        <span style="color:#ff79c6">service</span>:
+          <span style="color:#ff79c6">ports</span>:
+          - <span style="color:#ff79c6">name</span>: status-port
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">15021</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">15021</span>
+          - <span style="color:#ff79c6">name</span>: http2
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8080</span>
+          - <span style="color:#ff79c6">name</span>: https
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">443</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8443</span>
+          - <span style="color:#ff79c6">name</span>: tls
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">15443</span>
+            <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">15443</span>
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+      <span style="color:#ff79c6">name</span>: istio-ingressgateway
+    <span style="color:#ff79c6">istiodRemote</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">pilot</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: POD_NAME
+          <span style="color:#ff79c6">valueFrom</span>:
+            <span style="color:#ff79c6">fieldRef</span>:
+              <span style="color:#ff79c6">apiVersion</span>: v1
+              <span style="color:#ff79c6">fieldPath</span>: metadata.name
+        - <span style="color:#ff79c6">name</span>: POD_NAMESPACE
+          <span style="color:#ff79c6">valueFrom</span>:
+            <span style="color:#ff79c6">fieldRef</span>:
+              <span style="color:#ff79c6">apiVersion</span>: v1
+              <span style="color:#ff79c6">fieldPath</span>: metadata.namespace
+        <span style="color:#ff79c6">readinessProbe</span>:
+          <span style="color:#ff79c6">httpGet</span>:
+            <span style="color:#ff79c6">path</span>: /ready
+            <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">8080</span>
+          <span style="color:#ff79c6">initialDelaySeconds</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">periodSeconds</span>: <span style="color:#bd93f9">3</span>
+          <span style="color:#ff79c6">timeoutSeconds</span>: <span style="color:#bd93f9">5</span>
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+    <span style="color:#ff79c6">policy</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: POD_NAMESPACE
+          <span style="color:#ff79c6">valueFrom</span>:
+            <span style="color:#ff79c6">fieldRef</span>:
+              <span style="color:#ff79c6">apiVersion</span>: v1
+              <span style="color:#ff79c6">fieldPath</span>: metadata.namespace
+        <span style="color:#ff79c6">hpaSpec</span>:
+          <span style="color:#ff79c6">maxReplicas</span>: <span style="color:#bd93f9">5</span>
+          <span style="color:#ff79c6">metrics</span>:
+          - <span style="color:#ff79c6">resource</span>:
+              <span style="color:#ff79c6">name</span>: cpu
+              <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">type</span>: Resource
+          <span style="color:#ff79c6">minReplicas</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">scaleTargetRef</span>:
+            <span style="color:#ff79c6">apiVersion</span>: apps/v1
+            <span style="color:#ff79c6">kind</span>: Deployment
+            <span style="color:#ff79c6">name</span>: istio-policy
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+    <span style="color:#ff79c6">telemetry</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">k8s</span>:
+        <span style="color:#ff79c6">env</span>:
+        - <span style="color:#ff79c6">name</span>: POD_NAMESPACE
+          <span style="color:#ff79c6">valueFrom</span>:
+            <span style="color:#ff79c6">fieldRef</span>:
+              <span style="color:#ff79c6">apiVersion</span>: v1
+              <span style="color:#ff79c6">fieldPath</span>: metadata.namespace
+        - <span style="color:#ff79c6">name</span>: GOMAXPROCS
+          <span style="color:#ff79c6">value</span>: <span style="color:#f1fa8c">&#34;6&#34;</span>
+        <span style="color:#ff79c6">hpaSpec</span>:
+          <span style="color:#ff79c6">maxReplicas</span>: <span style="color:#bd93f9">5</span>
+          <span style="color:#ff79c6">metrics</span>:
+          - <span style="color:#ff79c6">resource</span>:
+              <span style="color:#ff79c6">name</span>: cpu
+              <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+            <span style="color:#ff79c6">type</span>: Resource
+          <span style="color:#ff79c6">minReplicas</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">scaleTargetRef</span>:
+            <span style="color:#ff79c6">apiVersion</span>: apps/v1
+            <span style="color:#ff79c6">kind</span>: Deployment
+            <span style="color:#ff79c6">name</span>: istio-telemetry
+        <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 4800m
+            <span style="color:#ff79c6">memory</span>: 4G
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 1000m
+            <span style="color:#ff79c6">memory</span>: 1G
+        <span style="color:#ff79c6">strategy</span>:
+          <span style="color:#ff79c6">rollingUpdate</span>:
+            <span style="color:#ff79c6">maxSurge</span>: <span style="color:#bd93f9">100</span>%
+            <span style="color:#ff79c6">maxUnavailable</span>: <span style="color:#bd93f9">25</span>%
+  <span style="color:#ff79c6">hub</span>: docker.io/istio
+  <span style="color:#ff79c6">meshConfig</span>:
+    <span style="color:#ff79c6">defaultConfig</span>:
+      <span style="color:#ff79c6">proxyMetadata</span>: {}
+    <span style="color:#ff79c6">enablePrometheusMerge</span>: <span style="color:#ff79c6">false</span>
+  <span style="color:#ff79c6">profile</span>: default
+  <span style="color:#ff79c6">tag</span>: <span style="color:#bd93f9">1.6.13</span>
+  <span style="color:#ff79c6">values</span>:
+    <span style="color:#ff79c6">base</span>:
+      <span style="color:#ff79c6">validationURL</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#ff79c6">clusterResources</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">gateways</span>:
+      <span style="color:#ff79c6">istio-egressgateway</span>:
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">env</span>:
+          <span style="color:#ff79c6">ISTIO_META_REQUESTED_NETWORK_VIEW</span>: <span style="color:#f1fa8c">&#34;external&#34;</span> <span style="color:#6272a4"># 配置外部网络请求</span>
+        <span style="color:#ff79c6">name</span>: istio-egressgateway
+        <span style="color:#ff79c6">secretVolumes</span>:
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/egressgateway-certs
+          <span style="color:#ff79c6">name</span>: egressgateway-certs
+          <span style="color:#ff79c6">secretName</span>: istio-egressgateway-certs
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/egressgateway-ca-certs
+          <span style="color:#ff79c6">name</span>: egressgateway-ca-certs
+          <span style="color:#ff79c6">secretName</span>: istio-egressgateway-ca-certs
+        <span style="color:#ff79c6">type</span>: ClusterIP
+        <span style="color:#ff79c6">zvpn</span>: {}
+      <span style="color:#ff79c6">istio-ingressgateway</span>:
+        <span style="color:#ff79c6">applicationPorts</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">debug</span>: info
+        <span style="color:#ff79c6">domain</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">env</span>: {}
+        <span style="color:#ff79c6">meshExpansionPorts</span>:
+        - <span style="color:#ff79c6">name</span>: tcp-pilot-grpc-tls
+          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">15011</span>
+          <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">15011</span>
+        - <span style="color:#ff79c6">name</span>: tcp-istiod
+          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">15012</span>
+          <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">15012</span>
+        - <span style="color:#ff79c6">name</span>: tcp-citadel-grpc-tls
+          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">8060</span>
+          <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8060</span>
+        - <span style="color:#ff79c6">name</span>: tcp-dns-tls
+          <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">853</span>
+          <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">8853</span>
+        <span style="color:#ff79c6">name</span>: istio-ingressgateway
+        <span style="color:#ff79c6">secretVolumes</span>:
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/ingressgateway-certs
+          <span style="color:#ff79c6">name</span>: ingressgateway-certs
+          <span style="color:#ff79c6">secretName</span>: istio-ingressgateway-certs
+        - <span style="color:#ff79c6">mountPath</span>: /etc/istio/ingressgateway-ca-certs
+          <span style="color:#ff79c6">name</span>: ingressgateway-ca-certs
+          <span style="color:#ff79c6">secretName</span>: istio-ingressgateway-ca-certs
+        <span style="color:#ff79c6">type</span>: LoadBalancer
+        <span style="color:#ff79c6">zvpn</span>: {}
+    <span style="color:#ff79c6">global</span>:
+      <span style="color:#ff79c6">arch</span>:
+        <span style="color:#ff79c6">amd64</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">ppc64le</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">s390x</span>: <span style="color:#bd93f9">2</span>
+      <span style="color:#ff79c6">configValidation</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">controlPlaneSecurityEnabled</span>: <span style="color:#ff79c6">true</span> <span style="color:#6272a4"># 控制平面TLS安全</span>
+      <span style="color:#ff79c6">defaultNodeSelector</span>: {}
+      <span style="color:#ff79c6">podDNSSearchNamespaces</span>:           <span style="color:#6272a4"># 配置dns搜索域为 .global</span>
+        - global
+      <span style="color:#ff79c6">defaultPodDisruptionBudget</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">defaultResources</span>:
+        <span style="color:#ff79c6">requests</span>:
+          <span style="color:#ff79c6">cpu</span>: 10m
+      <span style="color:#ff79c6">enableHelmTest</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">imagePullPolicy</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">imagePullSecrets</span>: []
+      <span style="color:#ff79c6">istioNamespace</span>: istio-system
+      <span style="color:#ff79c6">istiod</span>:
+        <span style="color:#ff79c6">enableAnalysis</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">jwtPolicy</span>: third-party-jwt
+      <span style="color:#ff79c6">logAsJson</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">logging</span>:
+        <span style="color:#ff79c6">level</span>: default:info
+      <span style="color:#ff79c6">meshExpansion</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">useILB</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">meshNetworks</span>: {}
+      <span style="color:#ff79c6">mountMtlsCerts</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">multiCluster</span>:
+        <span style="color:#ff79c6">clusterName</span>: <span style="color:#f1fa8c">&#34;istio-cluster-001&#34;</span>    <span style="color:#6272a4"># 分别填写两个集群的名字</span>
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>                       
+        <span style="color:#ff79c6">globalDomainSuffix</span>: <span style="color:#f1fa8c">&#34;global&#34;</span>        <span style="color:#6272a4"># 配置跨集群访问后缀</span>
+        <span style="color:#ff79c6">includeEnvoyFilter</span>: <span style="color:#ff79c6">true</span>            <span style="color:#6272a4"># 两个集群都必须配置且一样</span>
+      <span style="color:#ff79c6">network</span>: <span style="color:#f1fa8c">&#34;network1&#34;</span>                   <span style="color:#6272a4"># 两个集群都必须配置且一样</span>
+      <span style="color:#ff79c6">omitSidecarInjectorConfigMap</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">oneNamespace</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">operatorManageWebhooks</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">pilotCertProvider</span>: istiod
+      <span style="color:#ff79c6">priorityClassName</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">proxy</span>:
+        <span style="color:#ff79c6">autoInject</span>: enabled
+        <span style="color:#ff79c6">clusterDomain</span>: cluster.local
+        <span style="color:#ff79c6">componentLogLevel</span>: misc:error
+        <span style="color:#ff79c6">enableCoreDump</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">envoyStatsd</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">excludeIPRanges</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">excludeInboundPorts</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">excludeOutboundPorts</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">image</span>: proxyv2
+        <span style="color:#ff79c6">includeIPRanges</span>: <span style="color:#f1fa8c">&#39;*&#39;</span>
+        <span style="color:#ff79c6">logLevel</span>: warning
+        <span style="color:#ff79c6">privileged</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">readinessFailureThreshold</span>: <span style="color:#bd93f9">30</span>
+        <span style="color:#ff79c6">readinessInitialDelaySeconds</span>: <span style="color:#bd93f9">1</span>
+        <span style="color:#ff79c6">readinessPeriodSeconds</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 2000m
+            <span style="color:#ff79c6">memory</span>: 1024Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 100m
+            <span style="color:#ff79c6">memory</span>: 128Mi
+        <span style="color:#ff79c6">statusPort</span>: <span style="color:#bd93f9">15020</span>
+        <span style="color:#ff79c6">tracer</span>: zipkin
+      <span style="color:#ff79c6">proxy_init</span>:
+        <span style="color:#ff79c6">image</span>: proxyv2
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 100m
+            <span style="color:#ff79c6">memory</span>: 50Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 10m
+            <span style="color:#ff79c6">memory</span>: 10Mi
+      <span style="color:#ff79c6">sds</span>:
+        <span style="color:#ff79c6">token</span>:
+          <span style="color:#ff79c6">aud</span>: istio-ca
+      <span style="color:#ff79c6">sts</span>:
+        <span style="color:#ff79c6">servicePort</span>: <span style="color:#bd93f9">0</span>
+      <span style="color:#ff79c6">tracer</span>:
+        <span style="color:#ff79c6">datadog</span>:
+          <span style="color:#ff79c6">address</span>: $(HOST_IP):8126
+        <span style="color:#ff79c6">lightstep</span>:
+          <span style="color:#ff79c6">accessToken</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+          <span style="color:#ff79c6">address</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">stackdriver</span>:
+          <span style="color:#ff79c6">debug</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">maxNumberOfAnnotations</span>: <span style="color:#bd93f9">200</span>
+          <span style="color:#ff79c6">maxNumberOfAttributes</span>: <span style="color:#bd93f9">200</span>
+          <span style="color:#ff79c6">maxNumberOfMessageEvents</span>: <span style="color:#bd93f9">200</span>
+        <span style="color:#ff79c6">zipkin</span>:
+          <span style="color:#ff79c6">address</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">trustDomain</span>: cluster.local
+      <span style="color:#ff79c6">useMCP</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">grafana</span>:
+      <span style="color:#ff79c6">accessMode</span>: ReadWriteMany
+      <span style="color:#ff79c6">contextPath</span>: /grafana
+      <span style="color:#ff79c6">dashboardProviders</span>:
+        <span style="color:#ff79c6">dashboardproviders.yaml</span>:
+          <span style="color:#ff79c6">apiVersion</span>: <span style="color:#bd93f9">1</span>
+          <span style="color:#ff79c6">providers</span>:
+          - <span style="color:#ff79c6">disableDeletion</span>: <span style="color:#ff79c6">false</span>
+            <span style="color:#ff79c6">folder</span>: istio
+            <span style="color:#ff79c6">name</span>: istio
+            <span style="color:#ff79c6">options</span>:
+              <span style="color:#ff79c6">path</span>: /var/lib/grafana/dashboards/istio
+            <span style="color:#ff79c6">orgId</span>: <span style="color:#bd93f9">1</span>
+            <span style="color:#ff79c6">type</span>: file
+      <span style="color:#ff79c6">datasources</span>:
+        <span style="color:#ff79c6">datasources.yaml</span>:
+          <span style="color:#ff79c6">apiVersion</span>: <span style="color:#bd93f9">1</span>
+      <span style="color:#ff79c6">env</span>: {}
+      <span style="color:#ff79c6">envSecrets</span>: {}
+      <span style="color:#ff79c6">image</span>:
+        <span style="color:#ff79c6">repository</span>: grafana/grafana
+        <span style="color:#ff79c6">tag</span>: <span style="color:#bd93f9">6.7.4</span>
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">persist</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+      <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+      <span style="color:#ff79c6">security</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">passphraseKey</span>: passphrase
+        <span style="color:#ff79c6">secretName</span>: grafana
+        <span style="color:#ff79c6">usernameKey</span>: username
+      <span style="color:#ff79c6">service</span>:
+        <span style="color:#ff79c6">annotations</span>: {}
+        <span style="color:#ff79c6">externalPort</span>: <span style="color:#bd93f9">3000</span>
+        <span style="color:#ff79c6">name</span>: http
+        <span style="color:#ff79c6">type</span>: ClusterIP
+      <span style="color:#ff79c6">storageClassName</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+      <span style="color:#ff79c6">tolerations</span>: []
+    <span style="color:#ff79c6">istiocoredns</span>:
+      <span style="color:#ff79c6">coreDNSImage</span>: coredns/coredns
+      <span style="color:#ff79c6">coreDNSPluginImage</span>: istio/coredns-plugin:0.2-istio-1.1
+      <span style="color:#ff79c6">coreDNSTag</span>: <span style="color:#bd93f9">1.6.2</span>
+    <span style="color:#ff79c6">istiodRemote</span>:
+      <span style="color:#ff79c6">injectionURL</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#ff79c6">kiali</span>:
+      <span style="color:#ff79c6">contextPath</span>: /kiali
+      <span style="color:#ff79c6">createDemoSecret</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">dashboard</span>:
+        <span style="color:#ff79c6">auth</span>:
+          <span style="color:#ff79c6">strategy</span>: login
+        <span style="color:#ff79c6">grafanaInClusterURL</span>: http://grafana:3000
+        <span style="color:#ff79c6">jaegerInClusterURL</span>: http://tracing/jaeger
+        <span style="color:#ff79c6">passphraseKey</span>: passphrase
+        <span style="color:#ff79c6">secretName</span>: kiali
+        <span style="color:#ff79c6">usernameKey</span>: username
+        <span style="color:#ff79c6">viewOnlyMode</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">hub</span>: quay.io/kiali
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+      <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+      <span style="color:#ff79c6">security</span>:
+        <span style="color:#ff79c6">cert_file</span>: /kiali-cert/cert-chain.pem
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">private_key_file</span>: /kiali-cert/key.pem
+      <span style="color:#ff79c6">service</span>:
+        <span style="color:#ff79c6">annotations</span>: {}
+      <span style="color:#ff79c6">tag</span>: v1.18
+    <span style="color:#ff79c6">mixer</span>:
+      <span style="color:#ff79c6">adapters</span>:
+        <span style="color:#ff79c6">kubernetesenv</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">prometheus</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+          <span style="color:#ff79c6">metricsExpiryDuration</span>: 10m
+        <span style="color:#ff79c6">stackdriver</span>:
+          <span style="color:#ff79c6">auth</span>:
+            <span style="color:#ff79c6">apiKey</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+            <span style="color:#ff79c6">appCredentials</span>: <span style="color:#ff79c6">false</span>
+            <span style="color:#ff79c6">serviceAccountPath</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">tracer</span>:
+            <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+            <span style="color:#ff79c6">sampleProbability</span>: <span style="color:#bd93f9">1</span>
+        <span style="color:#ff79c6">stdio</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">outputAsJson</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">useAdapterCRDs</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">policy</span>:
+        <span style="color:#ff79c6">adapters</span>:
+          <span style="color:#ff79c6">kubernetesenv</span>:
+            <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+          <span style="color:#ff79c6">useAdapterCRDs</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">image</span>: mixer
+        <span style="color:#ff79c6">sessionAffinityEnabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">telemetry</span>:
+        <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">env</span>:
+          <span style="color:#ff79c6">GOMAXPROCS</span>: <span style="color:#f1fa8c">&#34;6&#34;</span>
+        <span style="color:#ff79c6">image</span>: mixer
+        <span style="color:#ff79c6">loadshedding</span>:
+          <span style="color:#ff79c6">latencyThreshold</span>: 100ms
+          <span style="color:#ff79c6">mode</span>: enforce
+        <span style="color:#ff79c6">nodeSelector</span>: {}
+        <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+        <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+        <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+        <span style="color:#ff79c6">sessionAffinityEnabled</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">tolerations</span>: []
+    <span style="color:#ff79c6">pilot</span>:
+      <span style="color:#ff79c6">appNamespaces</span>: []
+      <span style="color:#ff79c6">autoscaleEnabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">autoscaleMax</span>: <span style="color:#bd93f9">5</span>
+      <span style="color:#ff79c6">autoscaleMin</span>: <span style="color:#bd93f9">1</span>
+      <span style="color:#ff79c6">configMap</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">configNamespace</span>: istio-config
+      <span style="color:#ff79c6">cpu</span>:
+        <span style="color:#ff79c6">targetAverageUtilization</span>: <span style="color:#bd93f9">80</span>
+      <span style="color:#ff79c6">enableProtocolSniffingForInbound</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">enableProtocolSniffingForOutbound</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">env</span>: {}
+      <span style="color:#ff79c6">image</span>: pilot
+      <span style="color:#ff79c6">keepaliveMaxServerConnectionAge</span>: 30m
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+      <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+      <span style="color:#ff79c6">policy</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">replicaCount</span>: <span style="color:#bd93f9">1</span>
+      <span style="color:#ff79c6">tolerations</span>: []
+      <span style="color:#ff79c6">traceSampling</span>: <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">prometheus</span>:
+      <span style="color:#ff79c6">contextPath</span>: /prometheus
+      <span style="color:#ff79c6">hub</span>: docker.io/prom
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+      <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+      <span style="color:#ff79c6">provisionPrometheusCert</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">retention</span>: 6h
+      <span style="color:#ff79c6">scrapeInterval</span>: 15s
+      <span style="color:#ff79c6">security</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">tag</span>: v2.15.1
+      <span style="color:#ff79c6">tolerations</span>: []
+    <span style="color:#ff79c6">sidecarInjectorWebhook</span>:
+      <span style="color:#ff79c6">enableNamespacesByDefault</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">injectLabel</span>: istio-injection
+      <span style="color:#ff79c6">objectSelector</span>:
+        <span style="color:#ff79c6">autoInject</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">rewriteAppHTTPProbe</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">telemetry</span>:
+      <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+      <span style="color:#ff79c6">v1</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+      <span style="color:#ff79c6">v2</span>:
+        <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">metadataExchange</span>: {}
+        <span style="color:#ff79c6">prometheus</span>:
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">stackdriver</span>:
+          <span style="color:#ff79c6">configOverride</span>: {}
+          <span style="color:#ff79c6">enabled</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">logging</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">monitoring</span>: <span style="color:#ff79c6">false</span>
+          <span style="color:#ff79c6">topology</span>: <span style="color:#ff79c6">false</span>
+    <span style="color:#ff79c6">tracing</span>:
+      <span style="color:#ff79c6">jaeger</span>:
+        <span style="color:#ff79c6">accessMode</span>: ReadWriteMany
+        <span style="color:#ff79c6">hub</span>: docker.io/jaegertracing
+        <span style="color:#ff79c6">memory</span>:
+          <span style="color:#ff79c6">max_traces</span>: <span style="color:#bd93f9">50000</span>
+        <span style="color:#ff79c6">persist</span>: <span style="color:#ff79c6">false</span>
+        <span style="color:#ff79c6">spanStorageType</span>: badger
+        <span style="color:#ff79c6">storageClassName</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+        <span style="color:#ff79c6">tag</span>: <span style="color:#f1fa8c">&#34;1.16&#34;</span>
+      <span style="color:#ff79c6">nodeSelector</span>: {}
+      <span style="color:#ff79c6">opencensus</span>:
+        <span style="color:#ff79c6">exporters</span>:
+          <span style="color:#ff79c6">stackdriver</span>:
+            <span style="color:#ff79c6">enable_tracing</span>: <span style="color:#ff79c6">true</span>
+        <span style="color:#ff79c6">hub</span>: docker.io/omnition
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: <span style="color:#f1fa8c">&#34;1&#34;</span>
+            <span style="color:#ff79c6">memory</span>: 2Gi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 200m
+            <span style="color:#ff79c6">memory</span>: 400Mi
+        <span style="color:#ff79c6">tag</span>: <span style="color:#bd93f9">0.1.9</span>
+      <span style="color:#ff79c6">podAntiAffinityLabelSelector</span>: []
+      <span style="color:#ff79c6">podAntiAffinityTermLabelSelector</span>: []
+      <span style="color:#ff79c6">provider</span>: jaeger
+      <span style="color:#ff79c6">service</span>:
+        <span style="color:#ff79c6">annotations</span>: {}
+        <span style="color:#ff79c6">externalPort</span>: <span style="color:#bd93f9">9411</span>
+        <span style="color:#ff79c6">name</span>: http-query
+        <span style="color:#ff79c6">type</span>: ClusterIP
+      <span style="color:#ff79c6">zipkin</span>:
+        <span style="color:#ff79c6">hub</span>: docker.io/openzipkin
+        <span style="color:#ff79c6">javaOptsHeap</span>: <span style="color:#bd93f9">700</span>
+        <span style="color:#ff79c6">maxSpans</span>: <span style="color:#bd93f9">500000</span>
+        <span style="color:#ff79c6">node</span>:
+          <span style="color:#ff79c6">cpus</span>: <span style="color:#bd93f9">2</span>
+        <span style="color:#ff79c6">probeStartupDelay</span>: <span style="color:#bd93f9">10</span>
+        <span style="color:#ff79c6">queryPort</span>: <span style="color:#bd93f9">9411</span>
+        <span style="color:#ff79c6">resources</span>:
+          <span style="color:#ff79c6">limits</span>:
+            <span style="color:#ff79c6">cpu</span>: 1000m
+            <span style="color:#ff79c6">memory</span>: 2048Mi
+          <span style="color:#ff79c6">requests</span>:
+            <span style="color:#ff79c6">cpu</span>: 150m
+            <span style="color:#ff79c6">memory</span>: 900Mi
+        <span style="color:#ff79c6">tag</span>: <span style="color:#bd93f9">2.20.0</span>
+    <span style="color:#ff79c6">version</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+</code></pre></div><p>安装Isitod</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 install -f istio-cluster-001-iop.yaml
+$ istioctl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-002 install -f istio-cluster-002-iop.yaml
+</code></pre></div><h1 id="新增coredns支持global解析">新增coredns支持.global解析</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#6272a4"># 新增如下配置到Corefile中。</span>
+$ kubectl --kubeconfig=/root/.kube/istio-cluster-001 edit cm coredns -n kube-system
+    global:53 {
+        errors
+        cache 30
+        forward . $(kubectl get svc -n istio-system istiocoredns -o jsonpath={.spec.clusterIP})
+    }
+
+$ kubectl --kubeconfig=/root/.kube/istio-cluster-002 edit cm coredns -n kube-system
+    global:53 {
+        errors
+        cache 30
+        forward . $(kubectl get svc -n istio-system istiocoredns -o jsonpath={.spec.clusterIP})
+    }
+</code></pre></div><h1 id="部署服务验证">部署服务验证</h1>
+<p>目标：将在istio-cluster-002集群部署httpbin服务和在istio-cluster-001集群部署sleep服务用于请求httpbin服务。要求够正常解析和返回请求结果。</p>
+<p>部署sleep和helloworld的pod步骤略。。。 参考此连接完成环境部署：<a href="https://istio.io/v1.6/zh/docs/setup/install/multicluster/gateways/#configure-application-services">https://istio.io/v1.6/zh/docs/setup/install/multicluster/gateways/#configure-application-services</a></p>
+<h1 id="创建serviceentry资源">创建ServiceEntry资源</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">$ cat &lt;&lt;EOF | kubectl --kubeconfig=/root/.kube/istio-cluster-001 apply -f -
+<span style="color:#ff79c6">apiVersion</span>: networking.istio.io/v1alpha3
+<span style="color:#ff79c6">kind</span>: ServiceEntry
+<span style="color:#ff79c6">metadata</span>:
+  <span style="color:#ff79c6">name</span>: httpbin-bar
+  <span style="color:#ff79c6">namespace</span>: foo
+<span style="color:#ff79c6">spec</span>:
+  <span style="color:#ff79c6">hosts</span>:
+  - httpbin.bar.global
+  <span style="color:#ff79c6">location</span>: MESH_INTERNAL
+  <span style="color:#ff79c6">ports</span>:
+  - <span style="color:#ff79c6">name</span>: http1
+    <span style="color:#ff79c6">number</span>: <span style="color:#bd93f9">8000</span>
+    <span style="color:#ff79c6">protocol</span>: http
+  <span style="color:#ff79c6">resolution</span>: DNS
+  <span style="color:#ff79c6">addresses</span>:
+  - <span style="color:#bd93f9">240.0.0.2</span>
+  <span style="color:#ff79c6">endpoints</span>:
+  - <span style="color:#ff79c6">address</span>: ad76555a55ec045daaf71ffbf9c1db1c-667878442.ap-southeast-1.elb.amazonaws.com
+    <span style="color:#ff79c6">ports</span>:
+      <span style="color:#ff79c6">http1</span>: <span style="color:#bd93f9">15443</span>
+EOF
+</code></pre></div><h1 id="进入sleep容器验证">进入sleep容器验证</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ kubectl --kubeconfig<span style="color:#ff79c6">=</span>/root/.kube/istio-cluster-001 <span style="color:#8be9fd;font-style:italic">exec</span> -it sleep-f8cbf5b76-m2pxl -n foo -c sleep -- sh
+/ <span style="color:#6272a4"># curl httpbin.bar.global:8000 -I</span>
+HTTP/1.1 <span style="color:#bd93f9">200</span> OK
+server: envoy
+date: Sun, <span style="color:#bd93f9">25</span> Apr <span style="color:#bd93f9">2021</span> 07:57:24 GMT
+content-type: text/html; <span style="color:#8be9fd;font-style:italic">charset</span><span style="color:#ff79c6">=</span>utf-8
+content-length: <span style="color:#bd93f9">9593</span>
+access-control-allow-origin: *
+access-control-allow-credentials: <span style="color:#8be9fd;font-style:italic">true</span>
+x-envoy-upstream-service-time: <span style="color:#bd93f9">7</span>
+</code></pre></div><h1 id="结论">结论</h1>
+<ul>
+<li>
+<p>跨集群的服务访问必须通过.global的后缀来实现，如两个集群相同namespace下存在相同服务pod和svc，使用svc.namespace和svc.namespace.global有本质区别。</p>
+</li>
+<li>
+<p>集群支持高可用，当一个集群的istiod挂掉后，istiocoredns依然能解析服务。</p>
+</li>
+<li>
+<p>请求方跨集群调度时，需配置被调方的Serviceentry配置。暂时不知是否支持全局配置。</p>
+</li>
+<li>
+<p>不管集群1访问集群2还是集群2访问集群1都需要serviceentry的配置支持。</p>
+</li>
+<li>
+<p>相比istio1.9.2在应用请求调度方面复杂不少。</p>
+</li>
+</ul>
+
+
+                
+                
+<div class="entry-shang text-center">
+    
+	    <p>「真诚赞赏，手留余香」</p>
+	
+	<button class="zs show-zs btn btn-bred">赞赏支持</button>
+</div>
+<div class="zs-modal-bg"></div>
+<div class="zs-modal-box">
+	<div class="zs-modal-head">
+		<button type="button" class="close">×</button>
+		<span class="author"><a href="https://www.ipyker.com"><img src="/img/favicon.png" />云原生与运维</a></span>
+        
+	        <p class="tip"><i></i><span>真诚赞赏，手留余香</span></p>
+		
+ 
+	</div>
+	<div class="zs-modal-body">
+		<div class="zs-modal-btns">
+			<button class="btn btn-blink" data-num="2">2元</button>
+			<button class="btn btn-blink" data-num="5">5元</button>
+			<button class="btn btn-blink" data-num="10">10元</button>
+			<button class="btn btn-blink" data-num="50">50元</button>
+			<button class="btn btn-blink" data-num="100">100元</button>
+			<button class="btn btn-blink" data-num="1">任意金额</button>
+		</div>
+		<div class="zs-modal-pay">
+			<button class="btn btn-bred" id="pay-text">2元</button>
+			<p>使用<span id="pay-type">微信</span>扫描二维码完成支付</p>
+			<img src="/img/reward/wechat-2.png"  id="pay-image"/>
+		</div>
+	</div>
+	<div class="zs-modal-footer">
+		<label><input type="radio" name="zs-type" value="wechat" class="zs-type" checked="checked"><span ><span class="zs-wechat"><img src="/img/reward/wechat-btn.png"/></span></label>
+		<label><input type="radio" name="zs-type" value="alipay" class="zs-type" class="zs-alipay"><img src="/img/reward/alipay-btn.png"/></span></label>
+	</div>
+</div>
+<script type="text/javascript" src="/js/reward.js"></script>
+
+                
+
+                <hr>
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/post/istiod-smart-dns-proxy/" data-toggle="tooltip" data-placement="top" title="Istio1.8之后中的智能 DNS 代理">&larr;
+                            Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+                
+<div id="disqus-comment"></div>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "pyker-ops-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+
+            </div>
+            
+            <div class="
+                col-lg-11 col-lg-offset-1
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/istio" title="istio">
+                            istio
+                        </a>
+                        
+                        
+                        
+                        <a href="/tags/kubernetes" title="kubernetes">
+                            kubernetes
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/pod" title="pod">
+                            pod
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        <a href="/tags/servicemesh" title="servicemesh">
+                            servicemesh
+                        </a>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                    </div>
+                </section>
+                
+
+                
+                
+                <section>
+                    <hr>
+                    <h5>FRIENDS</h5>
+                    <ul class="list-inline">
+                        
+                        <li><a target="_blank" href="https://jimmysong.io/blog/">jimmysong blog</a></li>
+                        
+                        <li><a target="_blank" href="https://zhaohuabing.com/">zhaohuabing blog</a></li>
+                        
+                    </ul>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                   
+                   <li>
+                       <a href='' rel="alternate" type="application/rss+xml" title="云原生与运维" >
+                           <span class="fa-stack fa-lg">
+                               <i class="fas fa-circle fa-stack-2x"></i>
+                               <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                           </span>
+                       </a>
+                   </li>
+                   
+                    
+                    <li>
+                        <a href="mailto:pykerzhang@outlook.com">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+
+                    
+                    
+                    
+
+                    
+
+		    
+                    
+                    <li>
+                        <a target="_blank" href="/img/weixin-code.png">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-wechat fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/ipyker">
+                            <span class="fa-stack fa-lg">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+		    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            
+            
+            
+                </ul>
+		<p class="copyright text-muted">
+                    Copyright &copy; 云原生与运维 2021
+                    <br>
+                    <a href="https://themes.gohugo.io/hugo-theme-cleanwhite">CleanWhite Hugo Theme</a> by <a href="https://zhaohuabing.com">Huabing</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="100px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+
+
+
+
+
+<script>
+    
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+
+<script>
+    async("https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+
+
+
+
+</body>
+</html>
