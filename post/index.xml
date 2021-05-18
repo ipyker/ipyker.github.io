@@ -6,7 +6,16 @@
     <description>Recent content in Posts on 云原生与运维</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 27 Apr 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 17 May 2021 14:02:14 +0000</lastBuildDate><atom:link href="https://www.ipyker.com/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kubernetes Pod SHELL传递信号</title>
+      <link>https://www.ipyker.com/post/k8s-process-trap/</link>
+      <pubDate>Mon, 17 May 2021 14:02:14 +0000</pubDate>
+      
+      <guid>https://www.ipyker.com/post/k8s-process-trap/</guid>
+      <description>背景 在 Kubernetes 中，Pod 停止时 kubelet 会先给容器中的主进程发 SIGTERM 信号来通知进程进行 shutdown 以实现优雅停止，如果超时进程还未完全停止则会使用 SIGKILL 来强行终止。 但有时我</description>
+    </item>
+    
     <item>
       <title>部署Istio1.16多控制平面集群</title>
       <link>https://www.ipyker.com/post/istio1_16_mutil_primary/</link>

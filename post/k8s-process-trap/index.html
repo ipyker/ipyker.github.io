@@ -15,9 +15,9 @@
     
 
     
-    <meta name="title" content="Kubernetes 集群的零停机服务器更新 （一）" />
-    <meta property="og:title" content="Kubernetes 集群的零停机服务器更新 （一）" />
-    <meta property="twitter:title" content="Kubernetes 集群的零停机服务器更新 （一）" />
+    <meta name="title" content="Kubernetes Pod SHELL传递信号" />
+    <meta property="og:title" content="Kubernetes Pod SHELL传递信号" />
+    <meta property="twitter:title" content="Kubernetes Pod SHELL传递信号" />
     
 
     
@@ -34,9 +34,9 @@
     <meta name="keyword"  content="Pyker,  Pyker Blog, 博客, 个人网站, 互联网, Web, 云原生, PaaS, Istio, Kubernetes, 微服务, Microservice">
     <link rel="shortcut icon" href="/img/favicon.ico">
 
-    <title>Kubernetes 集群的零停机服务器更新 （一）-Pyker | Pyker Blog</title>
+    <title>Kubernetes Pod SHELL传递信号-Pyker | Pyker Blog</title>
 
-    <link rel="canonical" href="/post/2020-02-10-zero-downtime-server-updates-for-your-kubernetes-cluster/">
+    <link rel="canonical" href="/post/k8s-process-trap/">
 
     <link rel="stylesheet" href="/css/iDisqus.min.css"/>
 
@@ -157,7 +157,7 @@
 
 <style type="text/css">
     header.intro-header {
-        background-image: url('/img/zero-downtime-server.jpg')
+        background-image: url('/img/nodelocaldns.jpg')
     }
 </style>
 <header class="intro-header">
@@ -171,8 +171,12 @@
                             Kubernetes
                         </a>
                         
+                        <a class="tag" href="/tags/dockerfile" title="Dockerfile">
+                            Dockerfile
+                        </a>
+                        
                     </div>
-                    <h1>Kubernetes 集群的零停机服务器更新 （一）</h1>
+                    <h1>Kubernetes Pod SHELL传递信号</h1>
                     <h2 class="subheading"></h2>
                     <span class="meta">
                         Posted by 
@@ -180,7 +184,7 @@
                                  &#34;Pyker&#34;
                          
                         on 
-                        Monday, January 1, 0001
+                        Monday, May 17, 2021
                         
                         
                         
@@ -210,105 +214,96 @@
                 </header>
                 <nav id="TableOfContents">
   <ul>
-    <li><a href="#说明问题">说明问题</a></li>
-    <li><a href="#重新调度节点上的-pod">重新调度节点上的 Pod</a></li>
-    <li><a href="#避免宕机">避免宕机</a></li>
-    <li><a href="#备注">备注</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#使用-exec-启动">使用 exec 启动</a></li>
+    <li><a href="#多进程场景-使用-trap-传递信号">多进程场景: 使用 trap 传递信号</a></li>
+    <li><a href="#完美方案-使用-init-系统">完美方案: 使用 init 系统</a>
+      <ul>
+        <li><a href="#参考资料">参考资料</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
                 
-                <p>
-  <img src="/img/zero-downtime-server-updates-for-your-kubernetes-cluster-1.png" alt="zero-downtime-server-updates-for-your-kubernetes-cluster-1">
+                <h1 id="背景">背景</h1>
+<p>在 Kubernetes 中，Pod 停止时 kubelet 会先给容器中的主进程发 SIGTERM 信号来通知进程进行 shutdown 以实现优雅停止，如果超时进程还未完全停止则会使用 SIGKILL 来强行终止。</p>
+<p>但有时我们会遇到一种情况: 业务逻辑处理了 SIGTERM 信号，但 Pod 停止时好像没收到信号导致优雅停止逻辑不生效。</p>
+<p>通常是因为我们的业务进程是在脚本中启动的，容器的启动入口使用了脚本，所以容器中的主进程并不是我们所希望的业务进程而是 shell 进程，比如下面的 Dockerfile:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> centos:7</span>
+<span style="color:#ff79c6">ADD</span> start.sh /
+...
+<span style="color:#ff79c6">CMD</span> [<span style="color:#f1fa8c">&#34;/start.sh&#34;</span>]
+</code></pre></div><p>在 start.sh 脚本中运行二进制以启动业务进程:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#! /bin/bash
+</span><span style="color:#ff79c6"></span>...
 
-</p>
-<blockquote>
-<p>Kubernetes 集群的滚动更新</p>
-</blockquote>
-<p>在 Kubernetes 集群的生命周期中的某个时候，您将需要对基础节点执行维护。这可能包括程序包更新、内核升级或部署新的 VM 镜像。在 Kubernetes 中，被视为<a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#voluntary-and-involuntary-disruptions">“自愿中断”（Voluntary Disruption）</a>。</p>
-<p>这是一个分为 4 部分的博客系列的一部分：</p>
-<ol>
-<li>本文</li>
-<li><a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster">优雅地关闭 Pod</a></li>
-<li><a href="https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation">延迟关闭以等待 Pod 删除传播</a></li>
-<li><a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets">使用 PodDisruptionBudge 避免中断</a></li>
-</ol>
-<p>在本系列中，我们将介绍 Kubernetes 提供的所有工具，以实现集群中底层工作节点的零宕机时间更新。</p>
-<h1 id="说明问题">说明问题</h1>
-<p>我们将从原生的方法开始，找出该方法的挑战和潜在风险，并逐步构建解决我们在整个系列中发现的每个问题。我们将完成一个配置，该配置利用生命周期钩子、就绪探针以及 Pod 中断预算来实现零停机时间部署。</p>
-<p>首先，我们来看一个具体的例子。假设我们有一个两个节点的 Kubernetes 集群，该集群运行一个应用程序，其中两个 Pod 支持 Service 资源：</p>
-<p>
-  <img src="/img/zero-downtime-server-updates-for-your-kubernetes-cluster-2.png" alt="zero-downtime-server-updates-for-your-kubernetes-cluster-2">
+/bin/yourapp <span style="color:#6272a4"># 脚本中执行二进制</span>
+</code></pre></div><p>当 Pod 停止时，kubelet 发送 SIGTERM 信号给容器主进程，即 shell 进程，但 shell 进程并没有自动传递信号给子进程的能力，导致我们业务进程收不到信号，从而无法实现优雅停止，只能一直等到 <code>terminationGracePeriodSeconds</code> 超时时间 (默认 30s) 被强制杀死。</p>
+<h1 id="使用-exec-启动">使用 exec 启动</h1>
+<p>在 shell 中启动二进制的命令前加一个 exec 即可让该二进制启动的进程代替当前 shell 进程，即让新启动的进程成为主进程:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#! /bin/bash
+</span><span style="color:#ff79c6"></span>...
 
-</p>
+<span style="color:#8be9fd;font-style:italic">exec</span> /bin/yourapp <span style="color:#6272a4"># 脚本中执行二进制</span>
+</code></pre></div><p>然后业务进程就可以正常接收所有信号了，实现优雅退出也不在话下。</p>
+<h1 id="多进程场景-使用-trap-传递信号">多进程场景: 使用 trap 传递信号</h1>
+<p>通常我们一个容器只会有一个进程，也是 Kubernetes 的推荐做法。但有些时候我们不得不启动多个进程，比如从传统部署迁移到 Kubernetes 的过渡期间，使用了富容器，即单个容器中需要启动多个业务进程，这时也只能通过 shell 启动，但无法使用上面的 exec 方式来传递信号，因为 exec 只能让一个进程替代当前 shell 成为主进程。</p>
+<p>这个时候我们可以在 shell 中使用 trap 来捕获信号，当收到信号后触发回调函数来将信号通过 kill 传递给业务进程，脚本示例:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#! /bin/bash
+</span><span style="color:#ff79c6"></span>
+/bin/app1 &amp; <span style="color:#8be9fd;font-style:italic">pid1</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$!</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#6272a4"># 启动第一个业务进程并记录 pid</span>
+<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;app1 started with pid </span><span style="color:#8be9fd;font-style:italic">$pid1</span><span style="color:#f1fa8c">&#34;</span>
+
+/bin/app2 &amp; <span style="color:#8be9fd;font-style:italic">pid2</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$!</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#6272a4"># 启动第二个业务进程并记录 pid</span>
+<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;app2 started with pid </span><span style="color:#8be9fd;font-style:italic">$pid2</span><span style="color:#f1fa8c">&#34;</span>
+
+handle_sigterm<span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+  <span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#34;[INFO] Received SIGTERM&#34;</span>
+  <span style="color:#8be9fd;font-style:italic">kill</span> -SIGTERM <span style="color:#8be9fd;font-style:italic">$pid1</span> <span style="color:#8be9fd;font-style:italic">$pid2</span> <span style="color:#6272a4"># 传递 SIGTERM 给业务进程</span>
+  <span style="color:#8be9fd;font-style:italic">wait</span> <span style="color:#8be9fd;font-style:italic">$pid1</span> <span style="color:#8be9fd;font-style:italic">$pid2</span> <span style="color:#6272a4"># 等待所有业务进程完全终止</span>
+<span style="color:#ff79c6">}</span>
+<span style="color:#8be9fd;font-style:italic">trap</span> handle_sigterm SIGTERM <span style="color:#6272a4"># 捕获 SIGTERM 信号并回调 handle_sigterm 函数</span>
+
+<span style="color:#8be9fd;font-style:italic">wait</span> <span style="color:#6272a4"># 等待回调执行完，主进程再退出</span>
+</code></pre></div><p>附上信号表：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ <span style="color:#8be9fd;font-style:italic">kill</span> -l
+ 1<span style="color:#ff79c6">)</span> SIGHUP	 2<span style="color:#ff79c6">)</span> SIGINT	 3<span style="color:#ff79c6">)</span> SIGQUIT	 4<span style="color:#ff79c6">)</span> SIGILL	 5<span style="color:#ff79c6">)</span> SIGTRAP
+ 6<span style="color:#ff79c6">)</span> SIGABRT	 7<span style="color:#ff79c6">)</span> SIGBUS	 8<span style="color:#ff79c6">)</span> SIGFPE	 9<span style="color:#ff79c6">)</span> SIGKILL	10<span style="color:#ff79c6">)</span> SIGUSR1
+11<span style="color:#ff79c6">)</span> SIGSEGV	12<span style="color:#ff79c6">)</span> SIGUSR2	13<span style="color:#ff79c6">)</span> SIGPIPE	14<span style="color:#ff79c6">)</span> SIGALRM	15<span style="color:#ff79c6">)</span> SIGTERM
+16<span style="color:#ff79c6">)</span> SIGSTKFLT	17<span style="color:#ff79c6">)</span> SIGCHLD	18<span style="color:#ff79c6">)</span> SIGCONT	19<span style="color:#ff79c6">)</span> SIGSTOP	20<span style="color:#ff79c6">)</span> SIGTSTP
+21<span style="color:#ff79c6">)</span> SIGTTIN	22<span style="color:#ff79c6">)</span> SIGTTOU	23<span style="color:#ff79c6">)</span> SIGURG	24<span style="color:#ff79c6">)</span> SIGXCPU	25<span style="color:#ff79c6">)</span> SIGXFSZ
+26<span style="color:#ff79c6">)</span> SIGVTALRM	27<span style="color:#ff79c6">)</span> SIGPROF	28<span style="color:#ff79c6">)</span> SIGWINCH	29<span style="color:#ff79c6">)</span> SIGIO	30<span style="color:#ff79c6">)</span> SIGPWR
+31<span style="color:#ff79c6">)</span> SIGSYS	34<span style="color:#ff79c6">)</span> SIGRTMIN	35<span style="color:#ff79c6">)</span> SIGRTMIN+1	36<span style="color:#ff79c6">)</span> SIGRTMIN+2	37<span style="color:#ff79c6">)</span> SIGRTMIN+3
+38<span style="color:#ff79c6">)</span> SIGRTMIN+4	39<span style="color:#ff79c6">)</span> SIGRTMIN+5	40<span style="color:#ff79c6">)</span> SIGRTMIN+6	41<span style="color:#ff79c6">)</span> SIGRTMIN+7	42<span style="color:#ff79c6">)</span> SIGRTMIN+8
+43<span style="color:#ff79c6">)</span> SIGRTMIN+9	44<span style="color:#ff79c6">)</span> SIGRTMIN+10	45<span style="color:#ff79c6">)</span> SIGRTMIN+11	46<span style="color:#ff79c6">)</span> SIGRTMIN+12	47<span style="color:#ff79c6">)</span> SIGRTMIN+13
+48<span style="color:#ff79c6">)</span> SIGRTMIN+14	49<span style="color:#ff79c6">)</span> SIGRTMIN+15	50<span style="color:#ff79c6">)</span> SIGRTMAX-14	51<span style="color:#ff79c6">)</span> SIGRTMAX-13	52<span style="color:#ff79c6">)</span> SIGRTMAX-12
+53<span style="color:#ff79c6">)</span> SIGRTMAX-11	54<span style="color:#ff79c6">)</span> SIGRTMAX-10	55<span style="color:#ff79c6">)</span> SIGRTMAX-9	56<span style="color:#ff79c6">)</span> SIGRTMAX-8	57<span style="color:#ff79c6">)</span> SIGRTMAX-7
+58<span style="color:#ff79c6">)</span> SIGRTMAX-6	59<span style="color:#ff79c6">)</span> SIGRTMAX-5	60<span style="color:#ff79c6">)</span> SIGRTMAX-4	61<span style="color:#ff79c6">)</span> SIGRTMAX-3	62<span style="color:#ff79c6">)</span> SIGRTMAX-2
+63<span style="color:#ff79c6">)</span> SIGRTMAX-1	64<span style="color:#ff79c6">)</span> SIGRTMAX
+</code></pre></div><h1 id="完美方案-使用-init-系统">完美方案: 使用 init 系统</h1>
+<p>前面一种方案实际是用脚本实现了一个极简的 init 系统 (或 supervisor) 来管理所有子进程，只不过它的逻辑很简陋，仅仅简单的透传指定信号给子进程，其实社区有更完善的方案，dumb-init 和 tini 都可以作为 init 进程，作为主进程 (PID 1) 在容器中启动，然后它再运行 shell 来执行我们指定的脚本 (shell 作为子进程)，shell 中启动的业务进程也成为它的子进程，当它收到信号时会将其传递给所有的子进程，从而也能完美解决 SHELL 无法传递信号问题，并且还有回收僵尸进程的能力。</p>
+<p>这里以 dumb-init 为例制作镜像，下面是 Dockerfile 示例:</p>
 <blockquote>
-<p>我们的起点是两个 Nginx Pod 和在两个节点 Kubernetes 集群上运行的 Service。</p>
+<p>dumb-init github: <a href="https://github.com/Yelp/dumb-init">https://github.com/Yelp/dumb-init</a></p>
 </blockquote>
-<p>我们要先升级集群中两个底层工作程序节点的内核版本。我们该如何做？原生的方式是使用更新的配置启动新节点，然后在启动新节点后关闭旧节点。尽管这样可行，但是这种方法存在一些问题：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> ubuntu:latest</span>
+<span style="color:#ff79c6">RUN</span> apt-get update <span style="color:#ff79c6">&amp;&amp;</span> apt-get install -y dumb-init
+<span style="color:#ff79c6">ADD</span> start.sh /
+<span style="color:#ff79c6">ADD</span> app1 /bin/app1
+<span style="color:#ff79c6">ADD</span> app2 /bin/app2
+<span style="color:#ff79c6">ENTRYPOINT</span> [<span style="color:#f1fa8c">&#34;dumb-init&#34;</span>, <span style="color:#f1fa8c">&#34;--&#34;</span>]
+<span style="color:#ff79c6">CMD</span> [<span style="color:#f1fa8c">&#34;/start.sh&#34;</span>]
+</code></pre></div><p>start.sh 脚本示例:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ff79c6">#! /bin/bash
+</span><span style="color:#ff79c6"></span>/bin/app1 &amp;
+/bin/app2 &amp;
+<span style="color:#8be9fd;font-style:italic">wait</span>
+</code></pre></div><h2 id="参考资料">参考资料</h2>
 <ul>
-<li>当关闭旧节点时，您将会同时将在旧节点上运行的 Pod 下线。如果 Pod 需要清理以正常关闭该怎么办？底层 VM 技术可能不会等待清理过程。</li>
-<li>如果您同时关闭所有节点怎么办？将 Pod 重新启动到新节点时，您可能会短暂中断。</li>
-</ul>
-<p>我们想要的是一种从旧节点上优雅迁移 Pod 的方法，以确保在对节点进行更改时，没有任何工作负载运行。或者，如实例中所示，如果要完全替换集群（例如替换 VM 镜像），我们希望将工作负载从旧节点迁移到新节点。在这两种情况下，我们都希望避免将新 Pod 调度到旧节点，并且将所有正在运行的 Pod 从其上逐出。我们可以使用 <a href="https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/">kubectl drain</a> 命令实现它。</p>
-<h1 id="重新调度节点上的-pod">重新调度节点上的 Pod</h1>
-<p>Drain 操作实现了将所有 Pod 重新调度到其他节点的目的。在 drain 操作期间，该节点被标记为不可调度（<code>NoSchedule</code> 污点）。这样可以防止新的 Pod 被调度到该节点。之后，drain 操作开始从节点驱逐 Pod，通过将 <code>TERM</code> 信号发送到 Pod 的底层容器来关闭当前在该节点上运行的容器。</p>
-<p>尽管 <code>kubectl drain</code> 可以优雅处理 Pod 驱逐，但仍存在两个因素可能会在 drain 操作过程中导致服务中断：</p>
-<ul>
-<li>您的应用程序服务需要能够优雅处理 TERM 信号。驱逐 Pod 时，Kubernetes 将 <code>TERM</code> 信号发送容器，然后在发出信号后将容器强制关闭之前等待可配置时间，以使用容器关闭。但是，如果您的容器无法正常处理信号，则在工作期间（例如提交数据库事务），您仍然可以不干净地关闭 Pod。</li>
-<li>您将失去为应用程序提供服务的所有 Pod。在新节点上启动新容器时，您的服务可能会停机，或者，如果未使用控制器部署 Pod，则它们可能永远无法重启。</li>
-</ul>
-<h1 id="避免宕机">避免宕机</h1>
-<p>为了最大程度地减少因 drain 节点等自愿性中断而导致的停机时间，Kubernetes 提供以下中断处理功能：</p>
-<ul>
-<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods">优雅终止</a></li>
-<li><a href="https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/">生命周期钩子</a></li>
-<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#how-disruption-budgets-work">PodDisruptionBudgets</a></li>
-</ul>
-<p>在本系列的其余部分中，我们将使用 Kubernetes 的这些功能来减轻驱逐时间对服务的干扰。为了使后续操作更容易，我们将在上面的示例中使用以下资源配置：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
-<span style="color:#ff79c6">apiVersion</span>: apps/v1
-<span style="color:#ff79c6">kind</span>: Deployment
-<span style="color:#ff79c6">metadata</span>:
-  <span style="color:#ff79c6">name</span>: nginx-deployment
-  <span style="color:#ff79c6">labels</span>:
-    <span style="color:#ff79c6">app</span>: nginx
-<span style="color:#ff79c6">spec</span>:
-  <span style="color:#ff79c6">replicas</span>: <span style="color:#bd93f9">2</span>
-  <span style="color:#ff79c6">selector</span>:
-    <span style="color:#ff79c6">matchLabels</span>:
-      <span style="color:#ff79c6">app</span>: nginx
-  <span style="color:#ff79c6">template</span>:
-    <span style="color:#ff79c6">metadata</span>:
-      <span style="color:#ff79c6">labels</span>:
-        <span style="color:#ff79c6">app</span>: nginx
-    <span style="color:#ff79c6">spec</span>:
-      <span style="color:#ff79c6">containers</span>:
-      - <span style="color:#ff79c6">name</span>: nginx
-        <span style="color:#ff79c6">image</span>: nginx:1.15
-        <span style="color:#ff79c6">ports</span>:
-        - <span style="color:#ff79c6">containerPort</span>: <span style="color:#bd93f9">80</span>
----
-<span style="color:#ff79c6">kind</span>: Service
-<span style="color:#ff79c6">apiVersion</span>: v1
-<span style="color:#ff79c6">metadata</span>:
-  <span style="color:#ff79c6">name</span>: nginx-service
-<span style="color:#ff79c6">spec</span>:
-  <span style="color:#ff79c6">selector</span>:
-    <span style="color:#ff79c6">app</span>: nginx
-  <span style="color:#ff79c6">ports</span>:
-  - <span style="color:#ff79c6">protocol</span>: TCP
-    <span style="color:#ff79c6">targetPort</span>: <span style="color:#bd93f9">80</span>
-    <span style="color:#ff79c6">port</span>: <span style="color:#bd93f9">80</span>
-</code></pre></div><p>此配置是管理多个 Nginx Pod（在我们的示例中是两个）的 <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">Deployment</a> 资源的最小示例。该资源将用于维护集群中的两个 Nginx Pod。此外，配置将提供可用于访问集群中 Nginx Pod 的 <a href="https://kubernetes.io/docs/concepts/services-networking/service/">Service</a> 资源。</p>
-<p>我们将在本系列的整个过程中逐步增加它，以构建最终配置，以实现 Kubernetes 提供的所有功能，以最大程度地减少维护操作期间的停机时间。这是我们的路线图：</p>
-<ul>
-<li><a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">优雅地关闭 Pod</a></li>
-<li><a href="https://www.ipyker.com/post/2020-02-10-delaying-shutdown-to-wait-for-pod-deletion-propagation/">延迟关闭以等待 Pod 删除传播</a></li>
-<li><a href="https://www.ipyker.com/post/2020-02-10-avoiding-outages-in-your-kubernetes-cluster-using-poddisruptionbudgets/">使用 PodDisruptionBudge 避免中断</a></li>
-</ul>
-<p>继续阅读<a href="https://www.ipyker.com/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/">下一篇文章</a>，了解如何利用生命周期钩子来优雅关闭 Pod。</p>
-<h1 id="备注">备注</h1>
-<ul>
-<li>原文：<a href="https://blog.gruntwork.io/zero-downtime-server-updates-for-your-kubernetes-cluster-902009df5b33">https://blog.gruntwork.io/zero-downtime-server-updates-for-your-kubernetes-cluster-902009df5b33</a></li>
+<li><a href="https://medium.com/@gchudnov/trapping-signals-in-docker-containers-7a57fdda7d86">Trapping signals in Docker containers</a></li>
+<li><a href="https://www.ctl.io/developers/blog/post/gracefully-stopping-docker-containers/">Gracefully Stopping Docker Containers</a></li>
+<li><a href="https://hynek.me/articles/docker-signals/">Why Your Dockerized Application Isn’t Receiving Signals</a></li>
+<li><a href="https://www.kaggle.com/residentmario/best-practices-for-propagating-signals-on-docker">Best practices for propagating signals on Docker</a></li>
 </ul>
 
 
@@ -358,15 +353,10 @@
                 <ul class="pager">
                     
                     <li class="previous">
-                        <a href="/post/2020-02-10-gracefully-shutting-down-pods-in-a-kubernetes-cluster/" data-toggle="tooltip" data-placement="top" title="优雅关闭 Kubernetes 集群中的 Pod （二）">&larr;
+                        <a href="/post/istio1_16_mutil_primary/" data-toggle="tooltip" data-placement="top" title="部署Istio1.16多控制平面集群">&larr;
                             Previous Post</a>
                     </li>
                     
-                    
-                    <li class="next">
-                        <a href="/post/2020-11-01-k8s_error_status/" data-toggle="tooltip" data-placement="top" title="Kubernetes常见的Pod 状态">Next
-                            Post &rarr;</a>
-                    </li>
                     
                 </ul>
 
